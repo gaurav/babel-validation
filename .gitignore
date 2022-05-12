@@ -1,5 +1,10 @@
+# From GitHub
 *.class
 *.log
+
+# From Giter8
+/.bsp/
+target/
 
 # Ignore .idea, files specific to the IntelliJ IDE.
 .idea/
