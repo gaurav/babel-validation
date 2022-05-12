@@ -1,2 +1,5 @@
 *.class
 *.log
+
+# Ignore .idea, files specific to the IntelliJ IDE.
+.idea/
