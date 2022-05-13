@@ -1,3 +1,6 @@
+# Ignore all data files.
+data/
+
 # From GitHub
 *.class
 *.log
