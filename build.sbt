@@ -8,7 +8,17 @@ ThisBuild / organizationName := "RENCI"
 lazy val root = (project in file("."))
   .settings(
     name := "BabelValidator",
-    libraryDependencies += scalaTest % Test
+
+    // Dependencies
+    libraryDependencies += scallop,
+    libraryDependencies += scalaLogging,
+    libraryDependencies += logback,
+
+    // Test dependencies
+    libraryDependencies += scalaTest % Test,
+
+    // Test settings.
+    Test / logBuffered := false     // Allows scalatest to do a better job with the output.
   )
 
 // See https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html for instructions on how to publish to Sonatype.
