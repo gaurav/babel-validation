@@ -13,6 +13,8 @@ lazy val root = (project in file("."))
     libraryDependencies += scallop,
     libraryDependencies += scalaLogging,
     libraryDependencies += logback,
+    libraryDependencies += zio,
+    libraryDependencies += zioStreams,
 
     // Test dependencies
     libraryDependencies += scalaTest % Test,
