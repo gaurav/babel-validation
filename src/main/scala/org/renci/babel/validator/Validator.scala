@@ -5,8 +5,6 @@ import com.typesafe.scalalogging._
 import org.rogach.scallop._
 import zio._
 import org.renci.babel.validator.model.BabelOutput
-import zio.blocking.Blocking
-import zio.stream.ZSink
 
 object Validator extends scala.App with LazyLogging {
   class Conf(args: Seq[String]) extends ScallopConf(args) {
@@ -14,12 +12,19 @@ object Validator extends scala.App with LazyLogging {
     val babelPrevOutput = trailArg[File](descr = "The previous Babel output", required = false)
     validateFileIsDirectory(babelOutput)
     validateFileIsDirectory(babelPrevOutput)
+
+    val filterIn = opt[List[String]](descr = "List of filenames to include (matched using startsWith)")
+    val filterOut = opt[List[String]](descr = "List of filenames to exclude (matched using startsWith)")
+
     verify()
   }
 
   val conf = new Conf(args)
   val babelOutput = new BabelOutput(conf.babelOutput())
   val babelPrevOutputOpt: Option[BabelOutput] = conf.babelPrevOutput.toOption.map(new BabelOutput(_))
+
+  val filteredIn = conf.filterIn.getOrElse(List())
+  val filteredOut = conf.filterOut.getOrElse(List())
 
   val runtime = Runtime.default
 
@@ -28,6 +33,8 @@ object Validator extends scala.App with LazyLogging {
 
   for {
     (name, counter) <- babelOutput.countCompendia
+      if (filteredIn.exists(filteredIn.isEmpty || name.startsWith(_)) ||
+        (!filteredOut.exists(!filteredOut.isEmpty && name.startsWith(_))))
   } yield {
     val count = runtime.unsafeRun(counter)
     println(s"Number of lines in compendium ${name}: ${count}")
