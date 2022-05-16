@@ -32,15 +32,15 @@ object Validator extends scala.App with LazyLogging {
   println(babelOutput)
 
   for {
-    (name, counter) <- babelOutput.countCompendia
-    to_filter = (filteredIn.exists(filteredIn.isEmpty || name.startsWith(_)) ||
-        (!filteredOut.exists(!filteredOut.isEmpty && name.startsWith(_))))
+    summary <- babelOutput.compendiaSummary
+    to_filter = (filteredIn.exists(filteredIn.isEmpty || summary.filename.startsWith(_)) ||
+        (!filteredOut.exists(!filteredOut.isEmpty && summary.filename.startsWith(_))))
   } yield {
     if (to_filter) {
-      val count = runtime.unsafeRun(counter)
-      println(s"Number of lines in compendium ${name}: ${count}")
+      val count = runtime.unsafeRun(summary.countZIO)
+      println(s"Number of lines in compendium ${summary.filename}: ${count}")
     } else {
-      println(s"Skipping compendium ${name}")
+      println(s"Skipping compendium ${summary.filename}")
     }
   }
 

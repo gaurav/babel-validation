@@ -36,5 +36,17 @@ class Compendium(file: File) extends LazyLogging {
       .aggregate(ZTransducer.splitLines)
   }
 
+  case class Summary(
+    filename: String,
+    file: File,
+    countZIO: ZIO[Blocking, Throwable, Long]
+  )
+
+  def summary: Summary = Summary(
+    filename,
+    file,
+    count
+  )
+
   def count: ZIO[Blocking, Throwable, Long] = lines.runCount
 }
