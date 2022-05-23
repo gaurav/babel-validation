@@ -9,6 +9,9 @@ import zio.blocking.Blocking
 
 import scala.collection.mutable
 import zio.console._
+import zio.stream.ZStream
+
+import java.util.Date
 
 object Validator extends zio.App with LazyLogging {
   class Conf(args: Seq[String]) extends ScallopConf(args) {
@@ -19,6 +22,8 @@ object Validator extends zio.App with LazyLogging {
 
     val filterIn = opt[List[String]](descr = "List of filenames to include (matched using startsWith)")
     val filterOut = opt[List[String]](descr = "List of filenames to exclude (matched using startsWith)")
+
+    val nCores = opt[Int](descr = "Number of cores to use")
 
     verify()
   }
@@ -62,22 +67,30 @@ object Validator extends zio.App with LazyLogging {
 
     val pairedSummaries = retrievePairedCompendiaSummaries(babelOutput, babelPrevOutput)
     println("Filename\tCount\tPrevCount\tDiff\tPercentageChange")
-    ZIO.foreachPar(pairedSummaries)({
-      case (filename, summary, prevSummary) if filterFilename(conf, filename) => {
-        for {
-          count <- summary.countZIO
-          prevCount <- prevSummary.countZIO
-          _ = putStrLn(s"putStrLn: ${filename}\t${count}\t${prevCount}\t${relativePercentChange(count, prevCount)}")
-        } yield {
-          println(s"${filename}\t${count}\t${prevCount}\t${relativePercentChange(count, prevCount)}")
+    val startTime = System.nanoTime()
+    ZStream.fromIterable(pairedSummaries)
+      .mapMParUnordered(conf.nCores())({
+        case (filename: String, summary: Compendium#Summary, prevSummary: Compendium#Summary) if filterFilename(conf, filename) => {
+          for {
+            count <- summary.countZIO
+            prevCount <- prevSummary.countZIO
+            _ = putStrLn(s"putStrLn: ${filename}\t${count}\t${prevCount}\t${relativePercentChange(count, prevCount)}")
+          } yield {
+            println(s"${filename}\t${count}\t${prevCount}\t${relativePercentChange(count, prevCount)}")
+          }
         }
-      }
-      case (filename, _, _) if !filterFilename(conf, filename) => {
-        putStrLn(s"Skipping ${filename}")
-      }
-      case abc => ZIO.fail(new RuntimeException(s"Invalid paired summary: ${abc}"))
-    })
-      .andThen(ZIO.succeed())
+        case (filename: String, _, _) if !filterFilename(conf, filename) => {
+          logger.info(s"Skipping ${filename}")
+          ZIO.succeed()
+        }
+        case abc => ZIO.fail(new RuntimeException(s"Invalid paired summary: ${abc}"))
+      })
+      .runDrain
+      .andThen({
+        val timeTaken_secs = (System.nanoTime() - startTime).toDouble / 1E9
+        logger.info(f"Calculated counts on ${conf.nCores()} cores in $timeTaken_secs%.4f seconds")
+        ZIO.succeed()
+      })
   }
 
   // TODO:
