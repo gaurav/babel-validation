@@ -7,6 +7,7 @@ import zio._
 import org.renci.babel.validator.model.BabelOutput
 
 import scala.collection.mutable
+import scala.collection.parallel.CollectionConverters._
 
 object Validator extends scala.App with LazyLogging {
   class Conf(args: Seq[String]) extends ScallopConf(args) {

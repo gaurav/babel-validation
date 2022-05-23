@@ -5,6 +5,7 @@ object Dependencies {
   val zioVersion = "1.0.14"
 
   // Dependencies
+  lazy val scalaPar = "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
   lazy val scallop = "org.rogach" %% "scallop" % "4.1.0"
   lazy val zio = "dev.zio" %% "zio" % zioVersion
   lazy val zioStreams = "dev.zio" %% "zio-streams" % zioVersion

@@ -10,6 +10,7 @@ lazy val root = (project in file("."))
     name := "BabelValidator",
 
     // Dependencies
+    libraryDependencies += scalaPar,
     libraryDependencies += scallop,
     libraryDependencies += scalaLogging,
     libraryDependencies += logback,
