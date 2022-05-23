@@ -6,6 +6,8 @@ import org.rogach.scallop._
 import zio._
 import org.renci.babel.validator.model.BabelOutput
 
+import scala.collection.mutable
+
 object Validator extends scala.App with LazyLogging {
   class Conf(args: Seq[String]) extends ScallopConf(args) {
     val babelOutput = trailArg[File](descr = "The current Babel output directory", required = true)
@@ -26,30 +28,67 @@ object Validator extends scala.App with LazyLogging {
   val filteredIn = conf.filterIn.getOrElse(List())
   val filteredOut = conf.filterOut.getOrElse(List())
 
+  def filterFilename(filename: String): Boolean = {
+    if (!filteredIn.isEmpty) {
+      if (filteredIn.exists(filename.startsWith(_))) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    if (!filteredOut.isEmpty && !filteredOut.exists(filename.startsWith(_))) {
+      return false;
+    }
+
+    true
+  }
+
   val runtime = Runtime.default
 
   println(s"Profile of Babel output ${babelOutput}")
   println(babelOutput)
 
+  val countsByFilename = mutable.HashMap[String, Long]()
+  val summaries = babelOutput.compendiaSummary
   for {
-    summary <- babelOutput.compendiaSummary
-    to_filter = (filteredIn.exists(filteredIn.isEmpty || summary.filename.startsWith(_)) ||
-        (!filteredOut.exists(!filteredOut.isEmpty && summary.filename.startsWith(_))))
+    summary <- summaries
+    filename = summary.filename
+    to_filter = filterFilename(filename)
   } yield {
     if (to_filter) {
       val count = runtime.unsafeRun(summary.countZIO)
+      countsByFilename.put(filename, count)
       println(s"Number of lines in compendium ${summary.filename}: ${count}")
     } else {
       println(s"Skipping compendium ${summary.filename}")
     }
   }
 
-  if (!babelPrevOutputOpt.isEmpty) {
-    val babelPrevOutput = babelPrevOutputOpt.get
-
-    println(s"Profile of previous Babel output ${babelPrevOutput}")
-    println(babelPrevOutput)
-
-    println(s"Comparison of ${babelOutput} with previous ${babelPrevOutput}")
+  def relativePercentChange(count: Long, countPrev: Long): String = {
+    val percentChange = (count-countPrev).toDouble/countPrev * 100
+    f"${count - countPrev}%+d\t$percentChange%+2.4f%%"
   }
+
+  val summariesMap = summaries.groupBy(_.filename)
+  val summariesPrev = babelPrevOutputOpt.get.compendiaSummary
+
+  println(s"# Comparison with ${babelPrevOutputOpt.map(_.compendiaDir)}")
+  for {
+    summaryPrev <- summariesPrev
+    filename = summaryPrev.filename
+    to_filter = filterFilename(filename)
+  } yield {
+    if (to_filter) {
+      val count = runtime.unsafeRun(summaryPrev.countZIO)
+      val compareToCount = countsByFilename.getOrElse[Long](filename, 0)
+      println(s"$filename\t$count\t$compareToCount\t${relativePercentChange(count, compareToCount)}")
+    } else {
+      println(s"Skipping compendium ${filename}")
+    }
+  }
+
+  // TODO:
+  // - Add processing time, preferably broken down by compendium or something (maybe just emit logs?)
+  // -
 }

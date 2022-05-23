@@ -1,13 +1,21 @@
 package org.renci.babel.validator.model
 
 import com.typesafe.scalalogging.LazyLogging
-import zio.{Chunk, ZIO}
+import zio.{Chunk, Runtime, ZIO}
 import zio.blocking.Blocking
 
 import java.io.{File, FileInputStream, IOException}
 import zio.stream._
 
 import java.nio.file.Path
+import scala.collection.mutable
+
+// Q&D memorize from https://stackoverflow.com/a/36960228/27310
+object Compendium {
+  def memoize[I, O](f: I => O): I => O = new mutable.HashMap[I, O]() {
+    override def apply(key: I) = getOrElseUpdate(key, f(key))
+  }
+}
 
 /**
  * A Compendium models a single compendium in a Babel output.
