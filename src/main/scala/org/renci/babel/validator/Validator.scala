@@ -74,6 +74,8 @@ object Validator extends scala.App with LazyLogging {
   val summariesMap = summaries.groupBy(_.filename)
   val summariesPrev = babelPrevOutputOpt.get.compendiaSummary
 
+  // TODO: this should actually loop over the current filename counts, so we can flag where the prev run is missing
+  // files for the new one.
   println(s"# Comparison with ${babelPrevOutputOpt.map(_.compendiaDir)}")
   for {
     summaryPrev <- summariesPrev
@@ -81,8 +83,8 @@ object Validator extends scala.App with LazyLogging {
     to_filter = filterFilename(filename)
   } yield {
     if (to_filter) {
-      val count = runtime.unsafeRun(summaryPrev.countZIO)
-      val compareToCount = countsByFilename.getOrElse[Long](filename, 0)
+      val count = countsByFilename.getOrElse[Long](filename, 0)
+      val compareToCount = runtime.unsafeRun(summaryPrev.countZIO)
       println(s"$filename\t$count\t$compareToCount\t${relativePercentChange(count, compareToCount)}")
     } else {
       println(s"Skipping compendium ${filename}")
@@ -91,5 +93,5 @@ object Validator extends scala.App with LazyLogging {
 
   // TODO:
   // - Add processing time, preferably broken down by compendium or something (maybe just emit logs?)
-  // -
+  // - Some stats on memory usage would be great too
 }
