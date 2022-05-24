@@ -1,13 +1,11 @@
 package org.renci.babel.validator.model
 
 import com.typesafe.scalalogging.LazyLogging
-import zio.{Chunk, Runtime, ZIO}
+import zio.ZIO
 import zio.blocking.Blocking
-
-import java.io.{File, FileInputStream, IOException}
 import zio.stream._
 
-import java.nio.file.Path
+import java.io.File
 import scala.collection.mutable
 
 // Q&D memorize from https://stackoverflow.com/a/36960228/27310

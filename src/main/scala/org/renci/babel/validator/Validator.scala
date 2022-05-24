@@ -1,17 +1,14 @@
 package org.renci.babel.validator
 
-import java.io.{File, IOException}
 import com.typesafe.scalalogging._
+import org.renci.babel.validator.model.{BabelOutput, Compendium}
 import org.rogach.scallop._
 import zio._
-import org.renci.babel.validator.model.{BabelOutput, Compendium}
 import zio.blocking.Blocking
-
-import scala.collection.mutable
 import zio.console._
 import zio.stream.ZStream
 
-import java.util.Date
+import java.io.File
 
 object Validator extends zio.App with LazyLogging {
   class Conf(args: Seq[String]) extends ScallopConf(args) {
