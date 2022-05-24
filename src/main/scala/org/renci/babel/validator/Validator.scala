@@ -6,7 +6,7 @@ import org.rogach.scallop._
 import zio._
 import zio.blocking.Blocking
 import zio.console._
-import zio.stream.{ZStream, ZTransducer}
+import zio.stream.{ZSink, ZStream, ZTransducer}
 
 import java.io.File
 
@@ -62,6 +62,16 @@ object Validator extends zio.App with LazyLogging {
     val babelOutput = new BabelOutput(conf.babelOutput())
     val babelPrevOutput = new BabelOutput(conf.babelPrevOutput())
 
+    /*
+    val xyz = for {
+      recs <- babelOutput.compendia.head.recordsRaw
+    } yield {
+      println(s"Record: ${recs}")
+    }
+
+    return xyz.runDrain
+     */
+
     val pairedSummaries = retrievePairedCompendiaSummaries(babelOutput, babelPrevOutput)
     println("Filename\tCount\tPrevCount\tDiff\tPercentageChange")
     ZStream.fromIterable(pairedSummaries)
@@ -70,11 +80,24 @@ object Validator extends zio.App with LazyLogging {
           for {
             count <- summary.countZIO
             prevCount <- prevSummary.countZIO
+            typesChunk <- (for {
+              row: Compendium#CompendiumRecord <- summary.typesZStream.collectRight
+            } yield (row.`type`)).runCollect
+            typesErrors <- summary.typesZStream.collectLeft.runCollect
+            prevTypesChunk <- (for {
+              row: Compendium#CompendiumRecord <- prevSummary.typesZStream.collectRight
+            } yield (row.`type`)).runCollect
+
             // types <- summary.typesZIO
             // prevTypes <- prevSummary.typesZIO
           } yield {
             println(s"${filename}\t${count}\t${prevCount}\t${relativePercentChange(count, prevCount)}")
-            // println(s"${filename}\t${types}\t${prevTypes}\tAdded: ${types -- prevTypes}, Deleted: ${prevTypes -- types}")
+
+            println(s"Types errors: ${typesErrors}")
+
+            val types = typesChunk.toSet
+            val prevTypes = prevTypesChunk.toSet
+            println(s"${filename}\t${types} (${typesChunk.length})\t${prevTypes} (${prevTypesChunk.length})\tAdded: ${types -- prevTypes}, Deleted: ${prevTypes -- types}")
           }
         }
         case (filename: String, _, _) if !filterFilename(conf, filename) => {

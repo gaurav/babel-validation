@@ -44,18 +44,22 @@ class Compendium(file: File) extends LazyLogging {
   }
 
   case class Identifier (
-                        i: String,
-                        l: String
+                        i: Option[String],
+                        l: Option[String]
                         )
 
   case class CompendiumRecord (
                                 `type`: String,
-                              ic: Double,
+                              ic: Option[Double],
                                 identifiers: Seq[Identifier]
                               )
 
   implicit val identifierDecoder: JsonDecoder[Identifier] = DeriveJsonDecoder.gen[Identifier]
   implicit val recordDecoder: JsonDecoder[CompendiumRecord] = DeriveJsonDecoder.gen[CompendiumRecord]
+
+  lazy val recordsRaw: ZStream[Blocking, Throwable, Either[String, CompendiumRecord]] = {
+    lines.map(line => line.fromJson[CompendiumRecord])
+  }
 
   lazy val records: ZStream[Blocking, Throwable, CompendiumRecord] = {
     lines
@@ -69,14 +73,16 @@ class Compendium(file: File) extends LazyLogging {
     filename: String,
     file: File,
     countZIO: ZIO[Blocking, Throwable, Long],
-    typesZIO: ZIO[Blocking, Throwable, Set[String]]
-  )
+    typesZIO: ZIO[Blocking, Throwable, Set[String]],
+    typesZStream: ZStream[Blocking, Throwable, Either[String, CompendiumRecord]]
+                    )
 
   def summary: Summary = Summary(
     filename,
     file,
     count,
-    types
+    types,
+    recordsRaw
   )
 
   def count: ZIO[Blocking, Throwable, Long] = lines.runCount
