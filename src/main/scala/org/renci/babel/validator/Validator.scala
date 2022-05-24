@@ -6,7 +6,7 @@ import org.rogach.scallop._
 import zio._
 import zio.blocking.Blocking
 import zio.console._
-import zio.stream.ZStream
+import zio.stream.{ZStream, ZTransducer}
 
 import java.io.File
 
@@ -65,13 +65,16 @@ object Validator extends zio.App with LazyLogging {
     val pairedSummaries = retrievePairedCompendiaSummaries(babelOutput, babelPrevOutput)
     println("Filename\tCount\tPrevCount\tDiff\tPercentageChange")
     ZStream.fromIterable(pairedSummaries)
-      .mapMParUnordered(conf.nCores())({
+      .mapMParUnordered(conf.nCores())(result => result match {
         case (filename: String, summary: Compendium#Summary, prevSummary: Compendium#Summary) if filterFilename(conf, filename) => {
           for {
             count <- summary.countZIO
             prevCount <- prevSummary.countZIO
+            // types <- summary.typesZIO
+            // prevTypes <- prevSummary.typesZIO
           } yield {
             println(s"${filename}\t${count}\t${prevCount}\t${relativePercentChange(count, prevCount)}")
+            // println(s"${filename}\t${types}\t${prevTypes}\tAdded: ${types -- prevTypes}, Deleted: ${prevTypes -- types}")
           }
         }
         case (filename: String, _, _) if !filterFilename(conf, filename) => {

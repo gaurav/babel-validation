@@ -4,6 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import zio.ZIO
 import zio.blocking.Blocking
 import zio.stream._
+import zio.json._
 
 import java.io.File
 import scala.collection.mutable
@@ -42,17 +43,42 @@ class Compendium(file: File) extends LazyLogging {
       .aggregate(ZTransducer.splitLines)
   }
 
+  case class Identifier (
+                        i: String,
+                        l: String
+                        )
+
+  case class CompendiumRecord (
+                                `type`: String,
+                              ic: Double,
+                                identifiers: Seq[Identifier]
+                              )
+
+  implicit val identifierDecoder: JsonDecoder[Identifier] = DeriveJsonDecoder.gen[Identifier]
+  implicit val recordDecoder: JsonDecoder[CompendiumRecord] = DeriveJsonDecoder.gen[CompendiumRecord]
+
+  lazy val records: ZStream[Blocking, Throwable, CompendiumRecord] = {
+    lines
+      .flatMap(line => line.fromJson[CompendiumRecord].fold(
+      err => ZStream.fail(new RuntimeException(s"Could not parse line '${line}: ${err}")),
+      r => ZStream.succeed(r)
+    ))
+  }
+
   case class Summary(
     filename: String,
     file: File,
-    countZIO: ZIO[Blocking, Throwable, Long]
+    countZIO: ZIO[Blocking, Throwable, Long],
+    typesZIO: ZIO[Blocking, Throwable, Set[String]]
   )
 
   def summary: Summary = Summary(
     filename,
     file,
-    count
+    count,
+    types
   )
 
   def count: ZIO[Blocking, Throwable, Long] = lines.runCount
+  def types: ZIO[Blocking, Throwable, Set[String]] = records.map(_.`type`).fold(Set[String]())(_ + _)
 }
