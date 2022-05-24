@@ -67,14 +67,12 @@ object Validator extends zio.App with LazyLogging {
 
     val pairedSummaries = retrievePairedCompendiaSummaries(babelOutput, babelPrevOutput)
     println("Filename\tCount\tPrevCount\tDiff\tPercentageChange")
-    val startTime = System.nanoTime()
     ZStream.fromIterable(pairedSummaries)
       .mapMParUnordered(conf.nCores())({
         case (filename: String, summary: Compendium#Summary, prevSummary: Compendium#Summary) if filterFilename(conf, filename) => {
           for {
             count <- summary.countZIO
             prevCount <- prevSummary.countZIO
-            _ = putStrLn(s"putStrLn: ${filename}\t${count}\t${prevCount}\t${relativePercentChange(count, prevCount)}")
           } yield {
             println(s"${filename}\t${count}\t${prevCount}\t${relativePercentChange(count, prevCount)}")
           }
@@ -86,11 +84,6 @@ object Validator extends zio.App with LazyLogging {
         case abc => ZIO.fail(new RuntimeException(s"Invalid paired summary: ${abc}"))
       })
       .runDrain
-      .andThen({
-        val timeTaken_secs = (System.nanoTime() - startTime).toDouble / 1E9
-        logger.info(f"Calculated counts on ${conf.nCores()} cores in $timeTaken_secs%.4f seconds")
-        ZIO.succeed()
-      })
   }
 
   // TODO:
