@@ -69,6 +69,7 @@ class Compendium(file: File) extends LazyLogging {
     ))
   }
 
+  // TODO: get rid of Summary, replace with direct calls to the wrapped object
   case class Summary(
     filename: String,
     file: File,
