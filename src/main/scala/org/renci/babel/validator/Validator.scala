@@ -1,17 +1,16 @@
 package org.renci.babel.validator
 
-import java.io.{File, IOException}
 import com.typesafe.scalalogging._
+import org.renci.babel.validator.model.{BabelOutput, Compendium}
 import org.rogach.scallop._
 import zio._
-import org.renci.babel.validator.model.{BabelOutput, Compendium}
 import zio.blocking.Blocking
-
-import scala.collection.mutable
 import zio.console._
-import zio.stream.ZStream
+import zio.stream.{ZSink, ZStream, ZTransducer}
 
-import java.util.Date
+import java.io.{File, FileOutputStream, PrintStream}
+import scala.collection.Set
+import scala.collection.immutable.Set
 
 object Validator extends zio.App with LazyLogging {
   class Conf(args: Seq[String]) extends ScallopConf(args) {
@@ -24,6 +23,8 @@ object Validator extends zio.App with LazyLogging {
     val filterOut = opt[List[String]](descr = "List of filenames to exclude (matched using startsWith)")
 
     val nCores = opt[Int](descr = "Number of cores to use")
+
+    val output = opt[File](descr = "Output file")
 
     verify()
   }
@@ -64,17 +65,59 @@ object Validator extends zio.App with LazyLogging {
   def diffResults(conf: Conf): ZIO[Blocking with Console, Throwable, Unit] = {
     val babelOutput = new BabelOutput(conf.babelOutput())
     val babelPrevOutput = new BabelOutput(conf.babelPrevOutput())
+    val output = conf.output.toOption match {
+      case Some(file) => new PrintStream(new FileOutputStream(file))
+      case _ => System.out
+    }
+
+    /*
+    val xyz = for {
+      recs <- babelOutput.compendia.head.recordsRaw
+    } yield {
+      println(s"Record: ${recs}")
+    }
+
+    return xyz.runDrain
+     */
 
     val pairedSummaries = retrievePairedCompendiaSummaries(babelOutput, babelPrevOutput)
-    println("Filename\tCount\tPrevCount\tDiff\tPercentageChange")
+    output.println("Filename\tCount\tPrevCount\tDiff\tPercentageChange")
     ZStream.fromIterable(pairedSummaries)
-      .mapMParUnordered(conf.nCores())({
+      .mapMParUnordered(conf.nCores())(result => result match {
         case (filename: String, summary: Compendium#Summary, prevSummary: Compendium#Summary) if filterFilename(conf, filename) => {
           for {
             count <- summary.countZIO
             prevCount <- prevSummary.countZIO
+            typesChunk <- (for {
+              row: Compendium#CompendiumRecord <- summary.typesZStream.collectRight
+            } yield (row.`type`)).runCollect
+            typesErrors <- summary.typesZStream.collectLeft.runCollect
+            prevTypesChunk <- (for {
+              row: Compendium#CompendiumRecord <- prevSummary.typesZStream.collectRight
+            } yield (row.`type`)).runCollect
+
+            // types <- summary.typesZIO
+            // prevTypes <- prevSummary.typesZIO
           } yield {
-            println(s"${filename}\t${count}\t${prevCount}\t${relativePercentChange(count, prevCount)}")
+            output.println(s"${filename}\t${count}\t${prevCount}\t${relativePercentChange(count, prevCount)}")
+
+            if (typesErrors.nonEmpty) {
+              logger.error(s"Types errors: ${typesErrors}")
+            } else {
+              val types = typesChunk.toSet
+              val prevTypes = prevTypesChunk.toSet
+
+              val added = types -- prevTypes
+              val deleted = prevTypes -- types
+              val changeString = (added.toSeq, deleted.toSeq) match {
+                case (Seq(), Seq()) => "No change"
+                case (added, Seq()) => s"Added: ${added}"
+                case (Seq(), deleted) => s"Deleted: ${added}"
+                case (added, deleted) => s"Added: ${added}, Deleted: ${deleted}"
+              }
+
+              output.println(s"${filename}\t${types.mkString(", ")} (${typesChunk.length})\t${prevTypes.mkString(", ")} (${prevTypesChunk.length})\t${changeString}")
+            }
           }
         }
         case (filename: String, _, _) if !filterFilename(conf, filename) => {

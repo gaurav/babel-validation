@@ -1,13 +1,12 @@
 package org.renci.babel.validator.model
 
 import com.typesafe.scalalogging.LazyLogging
-import zio.{Chunk, Runtime, ZIO}
+import zio.ZIO
 import zio.blocking.Blocking
-
-import java.io.{File, FileInputStream, IOException}
 import zio.stream._
+import zio.json._
 
-import java.nio.file.Path
+import java.io.File
 import scala.collection.mutable
 
 // Q&D memorize from https://stackoverflow.com/a/36960228/27310
@@ -44,17 +43,49 @@ class Compendium(file: File) extends LazyLogging {
       .aggregate(ZTransducer.splitLines)
   }
 
+  case class Identifier (
+                        i: Option[String],
+                        l: Option[String]
+                        )
+
+  case class CompendiumRecord (
+                                `type`: String,
+                              ic: Option[Double],
+                                identifiers: Seq[Identifier]
+                              )
+
+  implicit val identifierDecoder: JsonDecoder[Identifier] = DeriveJsonDecoder.gen[Identifier]
+  implicit val recordDecoder: JsonDecoder[CompendiumRecord] = DeriveJsonDecoder.gen[CompendiumRecord]
+
+  lazy val recordsRaw: ZStream[Blocking, Throwable, Either[String, CompendiumRecord]] = {
+    lines.map(line => line.fromJson[CompendiumRecord])
+  }
+
+  lazy val records: ZStream[Blocking, Throwable, CompendiumRecord] = {
+    lines
+      .flatMap(line => line.fromJson[CompendiumRecord].fold(
+      err => ZStream.fail(new RuntimeException(s"Could not parse line '${line}: ${err}")),
+      r => ZStream.succeed(r)
+    ))
+  }
+
+  // TODO: get rid of Summary, replace with direct calls to the wrapped object
   case class Summary(
     filename: String,
     file: File,
-    countZIO: ZIO[Blocking, Throwable, Long]
-  )
+    countZIO: ZIO[Blocking, Throwable, Long],
+    typesZIO: ZIO[Blocking, Throwable, Set[String]],
+    typesZStream: ZStream[Blocking, Throwable, Either[String, CompendiumRecord]]
+                    )
 
   def summary: Summary = Summary(
     filename,
     file,
-    count
+    count,
+    types,
+    recordsRaw
   )
 
   def count: ZIO[Blocking, Throwable, Long] = lines.runCount
+  def types: ZIO[Blocking, Throwable, Set[String]] = records.map(_.`type`).fold(Set[String]())(_ + _)
 }
