@@ -2,9 +2,8 @@ package org.renci.babel.validator.model
 
 import java.io.File
 
-/**
- * A BabelOutput is a directory containing Babel output results.
- */
+/** A BabelOutput is a directory containing Babel output results.
+  */
 class BabelOutput(root: File) {
   def getFilesInDir(dirName: String): Seq[String] = {
     val dir = new File(root, dirName)
@@ -14,7 +13,10 @@ class BabelOutput(root: File) {
   }
 
   val compendiaDir = new File(root, "compendia")
-  lazy val compendia: Seq[Compendium] = getFilesInDir("compendia").map(filename => new Compendium(new File(compendiaDir, filename)))
+  lazy val compendia: Seq[Compendium] =
+    getFilesInDir("compendia").map(filename =>
+      new Compendium(new File(compendiaDir, filename))
+    )
 
   def compendiaSummary: Seq[Compendium#Summary] = compendia.map(_.summary)
 
