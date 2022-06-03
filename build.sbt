@@ -5,9 +5,22 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "org.renci"
 ThisBuild / organizationName := "RENCI"
 
+// Scalafix binary configuration
+ThisBuild / scalafixScalaBinaryVersion := CrossVersion.binaryScalaVersion(scalaVersion.value)
+
 lazy val root = (project in file("."))
   .settings(
     name := "BabelValidator",
+
+    // Scalafix options
+    semanticdbEnabled := true,
+    semanticdbVersion := scalafixSemanticdb.revision,
+
+    // Scalac options
+    scalacOptions ++= Seq(
+      "-Ywarn-unused",
+      "-deprecation"
+    ),
 
     // Dependencies
     libraryDependencies += scallop,
