@@ -27,3 +27,5 @@ jobs:
         cache: 'sbt'
     - name: Run tests
       run: sbt test
+    - name: Check code style with scalafmt
+      run: sbt scalafmtCheckAll
