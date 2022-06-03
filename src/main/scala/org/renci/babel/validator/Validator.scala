@@ -131,9 +131,9 @@ object Validator extends zio.App with LazyLogging {
                 val added = types -- prevTypes
                 val deleted = prevTypes -- types
                 val changeString = (added.toSeq, deleted.toSeq) match {
-                  case (Seq(), Seq())   => "No change"
-                  case (added, Seq())   => s"Added: ${added}"
-                  case (Seq(), _) => s"Deleted: ${added}"
+                  case (Seq(), Seq()) => "No change"
+                  case (added, Seq()) => s"Added: ${added}"
+                  case (Seq(), _)     => s"Deleted: ${added}"
                   case (added, deleted) =>
                     s"Added: ${added}, Deleted: ${deleted}"
                 }
@@ -165,7 +165,9 @@ object Validator extends zio.App with LazyLogging {
     * @param args
     *   Command line arguments.
     */
-  def run(args: List[String]): URIO[Blocking with Console with Console,ExitCode] = {
+  def run(
+      args: List[String]
+  ): URIO[Blocking with Console with Console, ExitCode] = {
     diffResults(new Conf(args)).exitCode
   }
 }
