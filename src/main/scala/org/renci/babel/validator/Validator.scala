@@ -8,7 +8,7 @@ import zio.blocking.Blocking
 import zio.console._
 import zio.stream.{ZSink, ZStream, ZTransducer}
 
-import java.io.File
+import java.io.{File, FileOutputStream, PrintStream}
 import scala.collection.Set
 import scala.collection.immutable.Set
 
@@ -23,6 +23,8 @@ object Validator extends zio.App with LazyLogging {
     val filterOut = opt[List[String]](descr = "List of filenames to exclude (matched using startsWith)")
 
     val nCores = opt[Int](descr = "Number of cores to use")
+
+    val output = opt[File](descr = "Output file")
 
     verify()
   }
@@ -63,6 +65,10 @@ object Validator extends zio.App with LazyLogging {
   def diffResults(conf: Conf): ZIO[Blocking with Console, Throwable, Unit] = {
     val babelOutput = new BabelOutput(conf.babelOutput())
     val babelPrevOutput = new BabelOutput(conf.babelPrevOutput())
+    val output = conf.output.toOption match {
+      case Some(file) => new PrintStream(new FileOutputStream(file))
+      case _ => System.out
+    }
 
     /*
     val xyz = for {
@@ -75,7 +81,7 @@ object Validator extends zio.App with LazyLogging {
      */
 
     val pairedSummaries = retrievePairedCompendiaSummaries(babelOutput, babelPrevOutput)
-    println("Filename\tCount\tPrevCount\tDiff\tPercentageChange")
+    output.println("Filename\tCount\tPrevCount\tDiff\tPercentageChange")
     ZStream.fromIterable(pairedSummaries)
       .mapMParUnordered(conf.nCores())(result => result match {
         case (filename: String, summary: Compendium#Summary, prevSummary: Compendium#Summary) if filterFilename(conf, filename) => {
@@ -93,7 +99,7 @@ object Validator extends zio.App with LazyLogging {
             // types <- summary.typesZIO
             // prevTypes <- prevSummary.typesZIO
           } yield {
-            println(s"${filename}\t${count}\t${prevCount}\t${relativePercentChange(count, prevCount)}")
+            output.println(s"${filename}\t${count}\t${prevCount}\t${relativePercentChange(count, prevCount)}")
 
             if (typesErrors.nonEmpty) {
               logger.error(s"Types errors: ${typesErrors}")
@@ -103,14 +109,14 @@ object Validator extends zio.App with LazyLogging {
 
               val added = types -- prevTypes
               val deleted = prevTypes -- types
-              val changeString = (added, deleted) match {
-                case (added, deleted) if added.isEmpty && deleted.isEmpty => "No change"
-                case (added, deleted) if added.nonEmpty && deleted.isEmpty => s"Added: ${added}"
-                case (added, deleted) if added.isEmpty && deleted.nonEmpty => s"Deleted: ${added}"
+              val changeString = (added.toSeq, deleted.toSeq) match {
+                case (Seq(), Seq()) => "No change"
+                case (added, Seq()) => s"Added: ${added}"
+                case (Seq(), deleted) => s"Deleted: ${added}"
                 case (added, deleted) => s"Added: ${added}, Deleted: ${deleted}"
               }
 
-              println(s"${filename}\t${types.mkString(", ")} (${typesChunk.length})\t${prevTypes.mkString(", ")} (${prevTypesChunk.length})\t${changeString}")
+              output.println(s"${filename}\t${types.mkString(", ")} (${typesChunk.length})\t${prevTypes.mkString(", ")} (${prevTypesChunk.length})\t${changeString}")
             }
           }
         }
