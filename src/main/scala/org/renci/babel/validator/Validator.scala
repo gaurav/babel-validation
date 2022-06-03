@@ -6,25 +6,31 @@ import org.rogach.scallop._
 import zio._
 import zio.blocking.Blocking
 import zio.console._
-import zio.stream.{ZSink, ZStream, ZTransducer}
+import zio.stream.ZStream
 
 import java.io.{File, FileOutputStream, PrintStream}
-import scala.collection.Set
-import scala.collection.immutable.Set
 
 object Validator extends zio.App with LazyLogging {
   class Conf(args: Seq[String]) extends ScallopConf(args) {
-    val babelOutput = trailArg[File](descr = "The current Babel output directory", required = true)
-    val babelPrevOutput = trailArg[File](descr = "The previous Babel output", required = true)
+    val babelOutput: ScallopOption[File] = trailArg[File](
+      descr = "The current Babel output directory",
+      required = true
+    )
+    val babelPrevOutput: ScallopOption[File] =
+      trailArg[File](descr = "The previous Babel output", required = true)
     validateFileIsDirectory(babelOutput)
     validateFileIsDirectory(babelPrevOutput)
 
-    val filterIn = opt[List[String]](descr = "List of filenames to include (matched using startsWith)")
-    val filterOut = opt[List[String]](descr = "List of filenames to exclude (matched using startsWith)")
+    val filterIn: ScallopOption[List[String]] = opt[List[String]](descr =
+      "List of filenames to include (matched using startsWith)"
+    )
+    val filterOut: ScallopOption[List[String]] = opt[List[String]](descr =
+      "List of filenames to exclude (matched using startsWith)"
+    )
 
-    val nCores = opt[Int](descr = "Number of cores to use")
+    val nCores: ScallopOption[Int] = opt[Int](descr = "Number of cores to use")
 
-    val output = opt[File](descr = "Output file")
+    val output: ScallopOption[File] = opt[File](descr = "Output file")
 
     verify()
   }
@@ -48,10 +54,14 @@ object Validator extends zio.App with LazyLogging {
     true
   }
 
-  def retrievePairedCompendiaSummaries(babelOutput: BabelOutput, babelPrevOutput: BabelOutput): Seq[(String, Compendium#Summary, Compendium#Summary)] = {
+  def retrievePairedCompendiaSummaries(
+      babelOutput: BabelOutput,
+      babelPrevOutput: BabelOutput
+  ): Seq[(String, Compendium#Summary, Compendium#Summary)] = {
     for {
       summary <- babelOutput.compendiaSummary
-      summaryPrev <- babelPrevOutput.compendiaSummary if summaryPrev.filename == summary.filename
+      summaryPrev <- babelPrevOutput.compendiaSummary
+      if summaryPrev.filename == summary.filename
     } yield {
       (summary.filename, summary, summaryPrev)
     }
@@ -67,7 +77,7 @@ object Validator extends zio.App with LazyLogging {
     val babelPrevOutput = new BabelOutput(conf.babelPrevOutput())
     val output = conf.output.toOption match {
       case Some(file) => new PrintStream(new FileOutputStream(file))
-      case _ => System.out
+      case _          => System.out
     }
 
     /*
@@ -80,52 +90,69 @@ object Validator extends zio.App with LazyLogging {
     return xyz.runDrain
      */
 
-    val pairedSummaries = retrievePairedCompendiaSummaries(babelOutput, babelPrevOutput)
+    val pairedSummaries =
+      retrievePairedCompendiaSummaries(babelOutput, babelPrevOutput)
     output.println("Filename\tCount\tPrevCount\tDiff\tPercentageChange")
-    ZStream.fromIterable(pairedSummaries)
-      .mapMParUnordered(conf.nCores())(result => result match {
-        case (filename: String, summary: Compendium#Summary, prevSummary: Compendium#Summary) if filterFilename(conf, filename) => {
-          for {
-            count <- summary.countZIO
-            prevCount <- prevSummary.countZIO
-            typesChunk <- (for {
-              row: Compendium#CompendiumRecord <- summary.typesZStream.collectRight
-            } yield (row.`type`)).runCollect
-            typesErrors <- summary.typesZStream.collectLeft.runCollect
-            prevTypesChunk <- (for {
-              row: Compendium#CompendiumRecord <- prevSummary.typesZStream.collectRight
-            } yield (row.`type`)).runCollect
+    ZStream
+      .fromIterable(pairedSummaries)
+      .mapMParUnordered(conf.nCores())(result =>
+        result match {
+          case (
+                filename: String,
+                summary: Compendium#Summary,
+                prevSummary: Compendium#Summary
+              ) if filterFilename(conf, filename) => {
+            for {
+              count <- summary.countZIO
+              prevCount <- prevSummary.countZIO
+              typesChunk <- (for {
+                row: Compendium#CompendiumRecord <-
+                  summary.typesZStream.collectRight
+              } yield (row.`type`)).runCollect
+              typesErrors <- summary.typesZStream.collectLeft.runCollect
+              prevTypesChunk <- (for {
+                row: Compendium#CompendiumRecord <-
+                  prevSummary.typesZStream.collectRight
+              } yield (row.`type`)).runCollect
 
-            // types <- summary.typesZIO
-            // prevTypes <- prevSummary.typesZIO
-          } yield {
-            output.println(s"${filename}\t${count}\t${prevCount}\t${relativePercentChange(count, prevCount)}")
+              // types <- summary.typesZIO
+              // prevTypes <- prevSummary.typesZIO
+            } yield {
+              output.println(
+                s"${filename}\t${count}\t${prevCount}\t${relativePercentChange(count, prevCount)}"
+              )
 
-            if (typesErrors.nonEmpty) {
-              logger.error(s"Types errors: ${typesErrors}")
-            } else {
-              val types = typesChunk.toSet
-              val prevTypes = prevTypesChunk.toSet
+              if (typesErrors.nonEmpty) {
+                logger.error(s"Types errors: ${typesErrors}")
+              } else {
+                val types = typesChunk.toSet
+                val prevTypes = prevTypesChunk.toSet
 
-              val added = types -- prevTypes
-              val deleted = prevTypes -- types
-              val changeString = (added.toSeq, deleted.toSeq) match {
-                case (Seq(), Seq()) => "No change"
-                case (added, Seq()) => s"Added: ${added}"
-                case (Seq(), deleted) => s"Deleted: ${added}"
-                case (added, deleted) => s"Added: ${added}, Deleted: ${deleted}"
+                val added = types -- prevTypes
+                val deleted = prevTypes -- types
+                val changeString = (added.toSeq, deleted.toSeq) match {
+                  case (Seq(), Seq()) => "No change"
+                  case (added, Seq()) => s"Added: ${added}"
+                  case (Seq(), _)     => s"Deleted: ${added}"
+                  case (added, deleted) =>
+                    s"Added: ${added}, Deleted: ${deleted}"
+                }
+
+                output.println(
+                  s"${filename}\t${types.mkString(", ")} (${typesChunk.length})\t${prevTypes
+                      .mkString(", ")} (${prevTypesChunk.length})\t${changeString}"
+                )
               }
-
-              output.println(s"${filename}\t${types.mkString(", ")} (${typesChunk.length})\t${prevTypes.mkString(", ")} (${prevTypesChunk.length})\t${changeString}")
             }
           }
+          case (filename: String, _, _) if !filterFilename(conf, filename) => {
+            logger.info(s"Skipping ${filename}")
+            ZIO.succeed(())
+          }
+          case abc =>
+            ZIO.fail(new RuntimeException(s"Invalid paired summary: ${abc}"))
         }
-        case (filename: String, _, _) if !filterFilename(conf, filename) => {
-          logger.info(s"Skipping ${filename}")
-          ZIO.succeed()
-        }
-        case abc => ZIO.fail(new RuntimeException(s"Invalid paired summary: ${abc}"))
-      })
+      )
       .runDrain
   }
 
@@ -133,12 +160,14 @@ object Validator extends zio.App with LazyLogging {
   // - Add processing time, preferably broken down by compendium or something (maybe just emit logs?)
   // - Some stats on memory usage would be great too
 
-  /**
-   * Entrypoint.
-   *
-   * @param args Command line arguments.
-   */
-  def run(args: List[String]) = {
+  /** Entrypoint.
+    *
+    * @param args
+    *   Command line arguments.
+    */
+  def run(
+      args: List[String]
+  ): URIO[Blocking with Console with Console, ExitCode] = {
     diffResults(new Conf(args)).exitCode
   }
 }
