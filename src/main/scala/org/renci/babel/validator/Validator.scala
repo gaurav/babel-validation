@@ -9,6 +9,8 @@ import zio.console._
 import zio.stream.{ZSink, ZStream, ZTransducer}
 
 import java.io.File
+import scala.collection.Set
+import scala.collection.immutable.Set
 
 object Validator extends zio.App with LazyLogging {
   class Conf(args: Seq[String]) extends ScallopConf(args) {
@@ -93,11 +95,23 @@ object Validator extends zio.App with LazyLogging {
           } yield {
             println(s"${filename}\t${count}\t${prevCount}\t${relativePercentChange(count, prevCount)}")
 
-            println(s"Types errors: ${typesErrors}")
+            if (typesErrors.nonEmpty) {
+              logger.error(s"Types errors: ${typesErrors}")
+            } else {
+              val types = typesChunk.toSet
+              val prevTypes = prevTypesChunk.toSet
 
-            val types = typesChunk.toSet
-            val prevTypes = prevTypesChunk.toSet
-            println(s"${filename}\t${types} (${typesChunk.length})\t${prevTypes} (${prevTypesChunk.length})\tAdded: ${types -- prevTypes}, Deleted: ${prevTypes -- types}")
+              val added = types -- prevTypes
+              val deleted = prevTypes -- types
+              val changeString = (added, deleted) match {
+                case (added, deleted) if added.isEmpty && deleted.isEmpty => "No change"
+                case (added, deleted) if added.nonEmpty && deleted.isEmpty => s"Added: ${added}"
+                case (added, deleted) if added.isEmpty && deleted.nonEmpty => s"Deleted: ${added}"
+                case (added, deleted) => s"Added: ${added}, Deleted: ${deleted}"
+              }
+
+              println(s"${filename}\t${types.mkString(", ")} (${typesChunk.length})\t${prevTypes.mkString(", ")} (${prevTypesChunk.length})\t${changeString}")
+            }
           }
         }
         case (filename: String, _, _) if !filterFilename(conf, filename) => {
