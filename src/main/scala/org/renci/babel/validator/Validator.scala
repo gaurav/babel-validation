@@ -6,33 +6,31 @@ import org.rogach.scallop._
 import zio._
 import zio.blocking.Blocking
 import zio.console._
-import zio.stream.{ZSink, ZStream, ZTransducer}
+import zio.stream.ZStream
 
 import java.io.{File, FileOutputStream, PrintStream}
-import scala.collection.Set
-import scala.collection.immutable.Set
 
 object Validator extends zio.App with LazyLogging {
   class Conf(args: Seq[String]) extends ScallopConf(args) {
-    val babelOutput = trailArg[File](
+    val babelOutput: ScallopOption[File] = trailArg[File](
       descr = "The current Babel output directory",
       required = true
     )
-    val babelPrevOutput =
+    val babelPrevOutput: ScallopOption[File] =
       trailArg[File](descr = "The previous Babel output", required = true)
     validateFileIsDirectory(babelOutput)
     validateFileIsDirectory(babelPrevOutput)
 
-    val filterIn = opt[List[String]](descr =
+    val filterIn: ScallopOption[List[String]] = opt[List[String]](descr =
       "List of filenames to include (matched using startsWith)"
     )
-    val filterOut = opt[List[String]](descr =
+    val filterOut: ScallopOption[List[String]] = opt[List[String]](descr =
       "List of filenames to exclude (matched using startsWith)"
     )
 
-    val nCores = opt[Int](descr = "Number of cores to use")
+    val nCores: ScallopOption[Int] = opt[Int](descr = "Number of cores to use")
 
-    val output = opt[File](descr = "Output file")
+    val output: ScallopOption[File] = opt[File](descr = "Output file")
 
     verify()
   }
@@ -135,7 +133,7 @@ object Validator extends zio.App with LazyLogging {
                 val changeString = (added.toSeq, deleted.toSeq) match {
                   case (Seq(), Seq())   => "No change"
                   case (added, Seq())   => s"Added: ${added}"
-                  case (Seq(), deleted) => s"Deleted: ${added}"
+                  case (Seq(), _) => s"Deleted: ${added}"
                   case (added, deleted) =>
                     s"Added: ${added}, Deleted: ${deleted}"
                 }
@@ -149,7 +147,7 @@ object Validator extends zio.App with LazyLogging {
           }
           case (filename: String, _, _) if !filterFilename(conf, filename) => {
             logger.info(s"Skipping ${filename}")
-            ZIO.succeed()
+            ZIO.succeed(())
           }
           case abc =>
             ZIO.fail(new RuntimeException(s"Invalid paired summary: ${abc}"))
@@ -167,7 +165,7 @@ object Validator extends zio.App with LazyLogging {
     * @param args
     *   Command line arguments.
     */
-  def run(args: List[String]) = {
+  def run(args: List[String]): URIO[Blocking with Console with Console,ExitCode] = {
     diffResults(new Conf(args)).exitCode
   }
 }
