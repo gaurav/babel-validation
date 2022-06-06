@@ -41,10 +41,13 @@ object Compendium extends LazyLogging {
 
   /** A single record in this compendium. */
   case class Record(
-      `type`: String,
-      ic: Option[Double],
-      identifiers: Seq[Identifier]
-  )
+    `type`: String,
+    ic: Option[Double],
+    identifiers: Seq[Identifier]
+  ) {
+    val primaryId: Option[String] = identifiers.headOption.flatMap(_.i)
+    val ids: Set[String] = identifiers.flatMap(_.i).toSet
+  }
 }
 
 /** A Compendium models a single compendium in a Babel output.
