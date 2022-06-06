@@ -91,11 +91,13 @@ object Reporter extends LazyLogging {
           ) if filterFilename(conf, filename) => {
 
           for {
-            lengthComparison <- Comparer.compareLengths(filename, summary, prevSummary)
-            typeComparison <- Comparer.compareTypes(filename, summary, prevSummary)
+            // lengthComparison <- Comparer.compareLengths(filename, summary, prevSummary)
+            // typeComparison <- Comparer.compareTypes(filename, summary, prevSummary)
+            clusterComparison <- Comparer.compareClusters(filename, summary, prevSummary)
           } yield {
-            output.println(lengthComparison.toString)
-            output.println(typeComparison.toString)
+            // output.println(lengthComparison.toString)
+            // output.println(typeComparison.toString)
+            output.println(clusterComparison.toString)
           }
         }
         case (filename: String, _, _) if !filterFilename(conf, filename) => {

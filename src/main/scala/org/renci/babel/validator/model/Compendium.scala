@@ -38,7 +38,10 @@ object Compendium extends LazyLogging {
     `type`: String,
     ic: Option[Double],
     identifiers: Seq[Identifier]
-  )
+  ) {
+    val primaryId: Option[String] = identifiers.headOption.flatMap(_.i)
+    val ids: Set[String] = identifiers.flatMap(_.i).toSet
+  }
 }
 
 /**
