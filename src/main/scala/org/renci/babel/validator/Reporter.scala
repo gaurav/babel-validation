@@ -89,7 +89,14 @@ object Reporter extends LazyLogging {
           summary: Compendium,
           prevSummary: Compendium
           ) if filterFilename(conf, filename) => {
-          Comparer.compareTwoCompendia(output, filename, summary, prevSummary)
+
+          for {
+            lengthComparison <- Comparer.compareLengths(filename, summary, prevSummary)
+            typeComparison <- Comparer.compareTypes(filename, summary, prevSummary)
+          } yield {
+            output.println(lengthComparison.toString)
+            output.println(typeComparison.toString)
+          }
         }
         case (filename: String, _, _) if !filterFilename(conf, filename) => {
           logger.info(s"Skipping ${filename}")
