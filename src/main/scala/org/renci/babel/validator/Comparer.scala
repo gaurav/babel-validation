@@ -81,10 +81,17 @@ object Comparer extends LazyLogging {
       prevRecords: Set[Compendium.Record]
   ) {
     val unchanged = (records == prevRecords)
+    val status: String = {
+      if (records.isEmpty && prevRecords.isEmpty) "ERROR_BLANK"
+      else if (unchanged) "UNCHANGED"
+      else if (records.isEmpty && prevRecords.nonEmpty) "DELETED"
+      else if (records.nonEmpty && prevRecords.isEmpty) "ADDED"
+      else "CHANGED"
+    }
     override val toString = if (unchanged) {
-      s"${id}\tIDENTICAL\t${records.size}\t${prevRecords.size}"
+      s"${id}\t${status}\t${records.size}\t${prevRecords.size}"
     } else {
-      s"${id}\tNOT IDENTICAL\t${records} (${records.size})\t${prevRecords} (${prevRecords.size})"
+      s"${id}\t${status}\t${records} (${records.size})\t${prevRecords} (${prevRecords.size})"
     }
   }
 
@@ -93,12 +100,22 @@ object Comparer extends LazyLogging {
       comparisons: Set[ClusterComparison]
   ) {
     override val toString = {
-      val unchanged = comparisons.filter(_.unchanged).size
       val changed = comparisons.filterNot(_.unchanged)
 
+      val by_status = comparisons
+        .toSeq
+        .map(_.status)
+        .groupBy(identity)
+        .map[(Int, String)]({
+          case (status, values) =>
+            (values.size, f"${status}: ${values.size} (${values.size.toDouble/comparisons.size*100}%.2f%%)")
+        })
+        .toSeq
+        .sortBy(-_._1)
+        .map(_._2)
+
       s"== ${filename} ==\n" +
-        f"Unchanged: ${unchanged} (${unchanged.toDouble/comparisons.size*100}%.2f%%)\n" +
-        f"Changed: ${changed.size} (${changed.size.toDouble/comparisons.size*100}%.2f%%)\n" +
+        by_status.mkString("\n") + "\n" +
         changed.map(c => s" - ${c.toString}").mkString("\n")
     }
   }
