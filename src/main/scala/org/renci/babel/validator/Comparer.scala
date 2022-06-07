@@ -80,14 +80,27 @@ object Comparer extends LazyLogging {
       records: Set[Compendium.Record],
       prevRecords: Set[Compendium.Record]
   ) {
-    override val toString = s"- ${id}\t${records.size}\t${prevRecords.size}\t${relativePercentChange(records.size, prevRecords.size)}"
+    val unchanged = (records == prevRecords)
+    override val toString = if (unchanged) {
+      s"${id}\tIDENTICAL\t${records.size}\t${prevRecords.size}"
+    } else {
+      s"${id}\tNOT IDENTICAL\t${records} (${records.size})\t${prevRecords} (${prevRecords.size})"
+    }
   }
 
   case class ClusterComparisonReport(
       filename: String,
       comparisons: Set[ClusterComparison]
   ) {
-    override val toString = s"== ${filename} ==\n${comparisons.mkString("\n")}"
+    override val toString = {
+      val unchanged = comparisons.filter(_.unchanged).size
+      val changed = comparisons.filterNot(_.unchanged)
+
+      s"== ${filename} ==\n" +
+        f"Unchanged: ${unchanged} (${unchanged.toDouble/comparisons.size*100}%.2f%%)\n" +
+        f"Changed: ${changed.size} (${changed.size.toDouble/comparisons.size*100}%.2f%%)\n" +
+        changed.map(c => s" - ${c.toString}").mkString("\n")
+    }
   }
 
   def compareClusters(filename: String, summary: Compendium, prevSummary: Compendium): ZIO[Blocking, Throwable, ClusterComparisonReport] = {
@@ -96,7 +109,7 @@ object Comparer extends LazyLogging {
       comparisons = ZIO.foreach(identifiers)(id => {
         for {
           records <- summary.records.filter(_.ids.contains(id)).runCollect
-          prevRecords <- summary.records.filter(_.ids.contains(id)).runCollect
+          prevRecords <- prevSummary.records.filter(_.ids.contains(id)).runCollect
         } yield {
           ClusterComparison(id, records.toSet, prevRecords.toSet)
         }
