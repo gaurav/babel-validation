@@ -59,7 +59,9 @@ object Converter extends LazyLogging {
     }
 
     case class Other (
-      subject_information_content: Option[Double]
+      cliqueId: String,
+      subject_information_content: Option[Double],
+      identifierIndex: Option[Long] = None
     )
     implicit val otherEncoder: JsonEncoder[Other] =
       DeriveJsonEncoder.gen[Other]
@@ -69,7 +71,8 @@ object Converter extends LazyLogging {
       val outputFile = new File(outputCompendia, outputFilename)
 
       val results = compendium.records
-        .flatMapPar(conf.nCores()) { record =>
+        .zipWithIndex
+        .flatMapPar(conf.nCores()) { case (record, cliqueIndex) =>
           val cliqueLeader = record.identifiers.head
           val otherIdentifiers = record.identifiers.tail
 
@@ -84,19 +87,26 @@ object Converter extends LazyLogging {
 
           val matchType = "HumanCurated"
           val other = Other(
+            cliqueId = s"${compendium.filename}#${cliqueIndex}",
             subject_information_content = record.ic
           )
-          val otherString = s"${matchType}\t${other.toJson}"
 
           if (otherIdentifiers.isEmpty) {
             ZStream.fromIterable(Seq(
-              s"${subjectString}\t\t\t${otherString}"
+              s"${subjectString}\t\t\t${matchType}\t${other.toJson}"
             ))
           } else {
             ZStream.fromIterable(otherIdentifiers)
-              .map(obj => {
+              .zipWithIndex
+              .map({ case (obj, identifierIndex) =>
+                val other = Other(
+                  cliqueId = s"${compendium.filename}#${cliqueIndex}",
+                  subject_information_content = record.ic,
+                  identifierIndex = Some(identifierIndex)
+                )
+
                 val objectString = s"${obj.i.getOrElse("")}\t${obj.l.getOrElse("")}"
-                s"${subjectString}\t${objectString}\t${otherString}"
+                s"${subjectString}\t${objectString}\t${matchType}\t${other.toJson}"
               })
           }
         }
