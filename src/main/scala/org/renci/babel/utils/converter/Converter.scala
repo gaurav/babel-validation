@@ -1,6 +1,7 @@
 package org.renci.babel.utils.converter
 
 import com.typesafe.scalalogging.LazyLogging
+import org.renci.babel.utils.Utils.{SupportsFilenameFiltering, filterFilename}
 import org.renci.babel.utils.model.BabelOutput
 import org.rogach.scallop.{ScallopOption, Subcommand}
 import zio.ZIO
@@ -16,7 +17,7 @@ import java.io.File
  */
 object Converter extends LazyLogging {
   /** The subcommand that controlling converting. */
-  class ConvertSubcommand extends Subcommand("convert") {
+  class ConvertSubcommand extends Subcommand("convert") with SupportsFilenameFiltering {
     val babelOutput: ScallopOption[File] = trailArg[File](
       descr = "The current Babel output directory",
       required = true
@@ -29,13 +30,6 @@ object Converter extends LazyLogging {
       ),
       descr = "The format to convert this Babel output to",
       default = Some("sssom")
-    )
-
-    val filterIn: ScallopOption[List[String]] = opt[List[String]](descr =
-      "List of filenames to include (matched using startsWith)"
-    )
-    val filterOut: ScallopOption[List[String]] = opt[List[String]](descr =
-      "List of filenames to exclude (matched using startsWith)"
     )
 
     val nCores: ScallopOption[Int] = opt[Int](descr = "Number of cores to use")
@@ -67,6 +61,11 @@ object Converter extends LazyLogging {
       DeriveJsonEncoder.gen[Other]
 
     ZIO.foreach(babelOutput.compendia) { compendium =>
+      if (!filterFilename(conf, compendium.filename)) {
+        logger.warn(s"Skipping ${compendium} because of filtering options.")
+        return ZIO.succeed()
+      }
+
       val outputFilename = compendium.filename.replaceFirst("\\.\\w{1,3}$", extension)
       val outputFile = new File(outputCompendia, outputFilename)
 
