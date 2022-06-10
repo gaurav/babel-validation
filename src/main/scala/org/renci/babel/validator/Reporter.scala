@@ -1,7 +1,6 @@
 package org.renci.babel.validator
 
 import com.typesafe.scalalogging.LazyLogging
-import org.renci.babel.validator.Validator.Conf
 import org.renci.babel.validator.model.{BabelOutput, Compendium}
 import zio.ZIO
 import zio.blocking.Blocking
@@ -21,16 +20,17 @@ object Reporter extends LazyLogging {
     f"${count - countPrev}%+d\t$percentChange%+2.2f%%"
   }
 
-  /** Generic method to determine whether a particular filename should be
-    * filtered in or out from the results. The algorithm we use is:
-    *   1. If any `--filtered-in` prefixes are provided, then we exclude
-    *      everything that isn't explicitly filtered in (by starting with one of
-    *      those prefixes in a case-sensitive manner). 2. Otherwise, all
-    *      filenames are allowed EXCEPT those explicitly filtered out by
-    *      `--filtered-out` by starting with one of those prefixes in a
-    *      case-sensitive manner.
-    */
-  def filterFilename(conf: Conf, filename: String): Boolean = {
+  /**
+   * Generic method to determine whether a particular filename should be
+   * filtered in or out from the results. The algorithm we use is:
+   * 1. If any `--filtered-in` prefixes are provided, then we exclude everything
+   *    that isn't explicitly filtered in (by starting with one of those prefixes
+   *    in a case-sensitive manner).
+   * 2. Otherwise, all filenames are allowed EXCEPT those explicitly filtered out
+   *    by `--filtered-out` by starting with one of those prefixes in a
+   *    case-sensitive manner.
+   */
+  def filterFilename(conf: Validator.ValidateSubcommand, filename: String): Boolean = {
     val filteredIn = conf.filterIn.getOrElse(List())
     val filteredOut = conf.filterOut.getOrElse(List())
 
@@ -68,7 +68,7 @@ object Reporter extends LazyLogging {
     }
   }
 
-  def diffResults(conf: Conf): ZIO[Blocking with Console, Throwable, Unit] = {
+  def diffResults(conf: Validator.ValidateSubcommand): ZIO[Blocking with Console, Throwable, Unit] = {
     val babelOutput = new BabelOutput(conf.babelOutput())
     val babelPrevOutput = new BabelOutput(conf.babelPrevOutput())
     val output = conf.output.toOption match {
