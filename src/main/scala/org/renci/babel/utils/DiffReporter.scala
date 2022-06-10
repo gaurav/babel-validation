@@ -38,14 +38,6 @@ object DiffReporter extends LazyLogging {
   }
 
   /**
-   * Helper method for displaying the percent change between two counts.
-   */
-  def relativePercentChange(count: Long, countPrev: Long): String = {
-    val percentChange = (count - countPrev).toDouble / countPrev * 100
-    f"${count - countPrev}%+d\t$percentChange%+2.2f%%"
-  }
-
-  /**
    * Generic method to determine whether a particular filename should be
    * filtered in or out from the results. The algorithm we use is:
    * 1. If any `--filtered-in` prefixes are provided, then we exclude everything

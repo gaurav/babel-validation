@@ -1,6 +1,7 @@
 package org.renci.babel.utils
 
 import com.typesafe.scalalogging._
+import org.renci.babel.utils.converter.Converter
 import org.rogach.scallop._
 import zio._
 import zio.blocking.Blocking
@@ -9,6 +10,7 @@ import zio.console._
 object CLI extends zio.App with LazyLogging {
   class Conf(args: Seq[String]) extends ScallopConf(args) {
     addSubcommand(new DiffReporter.DiffSubcommand())
+    addSubcommand(new Converter.ConvertSubcommand())
     requireSubcommand()
     verify()
   }
@@ -27,7 +29,8 @@ object CLI extends zio.App with LazyLogging {
   ): URIO[Blocking with Console with Console, ExitCode] = {
     val conf = new Conf(args)
     conf.subcommand match {
-      case Some(diffCommand: DiffReporter.DiffSubcommand) => DiffReporter.diffResults(diffCommand).exitCode
+      case Some(diff: DiffReporter.DiffSubcommand) => DiffReporter.diffResults(diff).exitCode
+      case Some(convert: Converter.ConvertSubcommand) => Converter.convert(convert).exitCode
       case a => ZIO.fail(s"Error: no subcommand provided or invalid (${a})")
           .exitCode
     }

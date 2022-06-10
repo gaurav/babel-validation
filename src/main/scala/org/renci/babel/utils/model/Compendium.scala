@@ -4,8 +4,8 @@ import com.typesafe.scalalogging.LazyLogging
 import org.renci.babel.utils.model.Compendium.{Identifier, Record}
 import zio.ZIO
 import zio.blocking.Blocking
-import zio.stream._
 import zio.json._
+import zio.stream._
 
 import java.io.File
 import scala.collection.mutable
