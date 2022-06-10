@@ -82,17 +82,20 @@ object Converter extends LazyLogging {
           */
 
           val predicateId = "skos:exactMatch"
-          val subjectString = s"${cliqueLeader.i.getOrElse("")}\t${cliqueLeader.l.getOrElse("")}\t${record.`type`}\t${predicateId}"
+          val subjectString = s"${cliqueLeader.i.getOrElse("")}\t${cliqueLeader.l.getOrElse("")}\t${record.`type`}"
 
-          val matchType = "HumanCurated"
-          val other = Other(
-            cliqueId = s"${compendium.filename}#${cliqueIndex}",
-            subject_information_content = record.ic
-          )
+          val mappingJustification = "semapv:MappingChaining"
 
+          // TODO: remove tabs from other.toJson
           if (otherIdentifiers.isEmpty) {
+            val other = Other(
+              cliqueId = s"${compendium.filename}#${cliqueIndex}",
+              subject_information_content = record.ic
+            )
+
             ZStream.fromIterable(Seq(
-              s"${subjectString}\t\t\t${matchType}\t${other.toJson}"
+              // s"${subjectString}\t\t\t${matchType}\t${other.toJson}"
+              s"${subjectString}\t${predicateId}\t${subjectString}\t${mappingJustification}\t${other.toJson}"
             ))
           } else {
             ZStream.fromIterable(otherIdentifiers)
@@ -104,14 +107,14 @@ object Converter extends LazyLogging {
                   identifierIndex = Some(identifierIndex)
                 )
 
-                val objectString = s"${obj.i.getOrElse("")}\t${obj.l.getOrElse("")}"
-                s"${subjectString}\t${objectString}\t${matchType}\t${other.toJson}"
+                val objectString = s"${obj.i.getOrElse("")}\t${obj.l.getOrElse("")}\t${record.`type`}"
+                s"${subjectString}\t${predicateId}\t${objectString}\t${mappingJustification}\t${other.toJson}"
               })
           }
         }
 
       (ZStream.fromIterable(Seq(
-        s"subject_id\tsubject_label\tsubject_category\tpredicate_id\tobject_id\tobject_label\tobject_category\tmatch_type\tother"
+        s"subject_id\tsubject_label\tsubject_category\tpredicate_id\tobject_id\tobject_label\tobject_category\tmapping_justification\tother"
       )) concat results)
         .intersperse("\n")
         .run({
