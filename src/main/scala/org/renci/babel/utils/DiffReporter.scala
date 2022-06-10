@@ -1,7 +1,7 @@
-package org.renci.babel.validator
+package org.renci.babel.utils
 
 import com.typesafe.scalalogging.LazyLogging
-import org.renci.babel.validator.model.{BabelOutput, Compendium}
+import org.renci.babel.utils.model.{BabelOutput, Compendium}
 import org.rogach.scallop.{ScallopOption, Subcommand}
 import zio.ZIO
 import zio.blocking.Blocking

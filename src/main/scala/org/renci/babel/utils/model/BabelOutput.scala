@@ -1,4 +1,4 @@
-package org.renci.babel.validator.model
+package org.renci.babel.utils.model
 
 import java.io.File
 

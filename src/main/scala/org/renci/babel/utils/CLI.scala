@@ -1,4 +1,4 @@
-package org.renci.babel.validator
+package org.renci.babel.utils
 
 import com.typesafe.scalalogging._
 import org.rogach.scallop._

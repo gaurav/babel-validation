@@ -1,7 +1,7 @@
-package org.renci.babel.validator.model
+package org.renci.babel.utils.model
 
 import com.typesafe.scalalogging.LazyLogging
-import org.renci.babel.validator.model.Compendium.{Identifier, Record}
+import org.renci.babel.utils.model.Compendium.{Identifier, Record}
 import zio.ZIO
 import zio.blocking.Blocking
 import zio.stream._
