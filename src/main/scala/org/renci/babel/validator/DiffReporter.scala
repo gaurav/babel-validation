@@ -2,19 +2,44 @@ package org.renci.babel.validator
 
 import com.typesafe.scalalogging.LazyLogging
 import org.renci.babel.validator.model.{BabelOutput, Compendium}
+import org.rogach.scallop.{ScallopOption, Subcommand}
 import zio.ZIO
 import zio.blocking.Blocking
 import zio.console.Console
 import zio.stream.ZStream
 
-import java.io.{FileOutputStream, PrintStream}
+import java.io.{File, FileOutputStream, PrintStream}
 
-/** Functions for reporting on the differences between two input files.
-  */
-object Reporter extends LazyLogging {
+/**
+ * Functions for reporting on the differences between two input files.
+ */
+object DiffReporter extends LazyLogging {
+  /** The subcommand that controlling comparing. */
+  class DiffSubcommand extends Subcommand("diff") {
+    val babelOutput: ScallopOption[File] = trailArg[File](
+      descr = "The current Babel output directory",
+      required = true
+    )
+    val babelPrevOutput: ScallopOption[File] =
+      trailArg[File](descr = "The previous Babel output", required = true)
+    validateFileIsDirectory(babelOutput)
+    validateFileIsDirectory(babelPrevOutput)
 
-  /** Helper method for displaying the percent change between two counts.
-    */
+    val filterIn: ScallopOption[List[String]] = opt[List[String]](descr =
+      "List of filenames to include (matched using startsWith)"
+    )
+    val filterOut: ScallopOption[List[String]] = opt[List[String]](descr =
+      "List of filenames to exclude (matched using startsWith)"
+    )
+
+    val nCores: ScallopOption[Int] = opt[Int](descr = "Number of cores to use")
+
+    val output: ScallopOption[File] = opt[File](descr = "Output file")
+  }
+
+  /**
+   * Helper method for displaying the percent change between two counts.
+   */
   def relativePercentChange(count: Long, countPrev: Long): String = {
     val percentChange = (count - countPrev).toDouble / countPrev * 100
     f"${count - countPrev}%+d\t$percentChange%+2.2f%%"
@@ -30,7 +55,7 @@ object Reporter extends LazyLogging {
    *    by `--filtered-out` by starting with one of those prefixes in a
    *    case-sensitive manner.
    */
-  def filterFilename(conf: Validator.ValidateSubcommand, filename: String): Boolean = {
+  def filterFilename(conf: DiffSubcommand, filename: String): Boolean = {
     val filteredIn = conf.filterIn.getOrElse(List())
     val filteredOut = conf.filterOut.getOrElse(List())
 
@@ -68,7 +93,7 @@ object Reporter extends LazyLogging {
     }
   }
 
-  def diffResults(conf: Validator.ValidateSubcommand): ZIO[Blocking with Console, Throwable, Unit] = {
+  def diffResults(conf: DiffSubcommand): ZIO[Blocking with Console, Throwable, Unit] = {
     val babelOutput = new BabelOutput(conf.babelOutput())
     val babelPrevOutput = new BabelOutput(conf.babelPrevOutput())
     val output = conf.output.toOption match {
