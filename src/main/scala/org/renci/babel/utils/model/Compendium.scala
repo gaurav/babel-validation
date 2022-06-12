@@ -38,7 +38,7 @@ object Compendium extends LazyLogging {
       i: Option[String],
       l: Option[String]
   ) {
-    override val toString = (i, l) match {
+    override val toString: String = (i, l) match {
       case (None, None)       => s"None"
       case (Some(i), None)    => i
       case (None, Some(l))    => s"[${l}]"
@@ -54,7 +54,7 @@ object Compendium extends LazyLogging {
   ) {
     val primaryId: Option[String] = identifiers.headOption.flatMap(_.i)
     val ids: Set[String] = identifiers.flatMap(_.i).toSet
-    override val toString = ic match {
+    override val toString: String = ic match {
       case None =>
         s"Record(${`type`} with ${identifiers.size} IDs: ${identifiers.mkString(", ")})"
       case Some(ic) =>

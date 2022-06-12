@@ -12,7 +12,7 @@ object Comparer extends LazyLogging {
   case class LengthComparison(filename: String, count: Long, prevCount: Long) {
     val relativePercentChange: String =
       Utils.relativePercentChange(count, prevCount)
-    override val toString =
+    override val toString: String =
       s"${filename}\t${count}\t${prevCount}\t${relativePercentChange}"
   }
 
@@ -34,9 +34,9 @@ object Comparer extends LazyLogging {
   ) {
     val typesSet = types.toSet
     val prevTypesSet = types.toSet
-    val added = typesSet -- prevTypesSet
-    val deleted = prevTypesSet -- typesSet
-    val changeString = (added.toSeq, deleted.toSeq) match {
+    val added: Set[String] = typesSet -- prevTypesSet
+    val deleted: Set[String] = prevTypesSet -- typesSet
+    val changeString: String = (added.toSeq, deleted.toSeq) match {
       case (Seq(), Seq())   => "No change"
       case (added, Seq())   => s"Added: ${added}"
       case (Seq(), deleted) => s"Deleted: ${deleted}"
@@ -44,7 +44,7 @@ object Comparer extends LazyLogging {
         s"Added: ${added}, Deleted: ${deleted}"
     }
 
-    override val toString =
+    override val toString: String =
       s"${filename}\t${typesSet.mkString(", ")} (${types.length})\t${prevTypesSet
           .mkString(", ")} (${prevTypes.length})\t${changeString}"
   }
@@ -79,7 +79,7 @@ object Comparer extends LazyLogging {
       records: Set[Compendium.Record],
       prevRecords: Set[Compendium.Record]
   ) {
-    val unchanged = (records == prevRecords)
+    val unchanged: Boolean = (records == prevRecords)
     val status: String = {
       if (records.isEmpty && prevRecords.isEmpty) "ERROR_BLANK"
       else if (unchanged) "UNCHANGED"
@@ -87,7 +87,7 @@ object Comparer extends LazyLogging {
       else if (records.nonEmpty && prevRecords.isEmpty) "ADDED"
       else "CHANGED"
     }
-    override val toString = if (unchanged) {
+    override val toString: String = if (unchanged) {
       s"${id}\t${status}\t${records.size}\t${prevRecords.size}"
     } else {
       s"${id}\t${status}\t${records} (${records.size})\t${prevRecords} (${prevRecords.size})"
@@ -98,7 +98,7 @@ object Comparer extends LazyLogging {
       filename: String,
       comparisons: Set[ClusterComparison]
   ) {
-    override val toString = {
+    override val toString: String = {
       val changed = comparisons.filterNot(_.unchanged)
 
       val by_status = comparisons.toSeq

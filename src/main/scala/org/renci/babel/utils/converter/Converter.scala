@@ -71,7 +71,7 @@ object Converter extends LazyLogging {
           logger.warn(
             s"Skipping ${compendium.filename} because of filtering options."
           )
-          ZIO.succeed()
+          ZIO.succeed(())
         } else {
           val outputFilename =
             compendium.filename.replaceFirst("\\.\\w{1,3}$", extension)
@@ -140,6 +140,6 @@ object Converter extends LazyLogging {
             })
         }
       }
-      .andThen(ZIO.succeed())
+      .andThen(ZIO.succeed(()))
   }
 }
