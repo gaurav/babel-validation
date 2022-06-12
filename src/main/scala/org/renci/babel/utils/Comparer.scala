@@ -9,12 +9,11 @@ import zio.{Chunk, ZIO}
   */
 object Comparer extends LazyLogging {
 
-  case class LengthComparison(
-      filename: String,
-      count: Long,
-      prevCount: Long) {
-    val relativePercentChange: String = Utils.relativePercentChange(count, prevCount)
-    override val toString = s"${filename}\t${count}\t${prevCount}\t${relativePercentChange}"
+  case class LengthComparison(filename: String, count: Long, prevCount: Long) {
+    val relativePercentChange: String =
+      Utils.relativePercentChange(count, prevCount)
+    override val toString =
+      s"${filename}\t${count}\t${prevCount}\t${relativePercentChange}"
   }
 
   def compareLengths(
@@ -35,17 +34,17 @@ object Comparer extends LazyLogging {
   ) {
     val typesSet = types.toSet
     val prevTypesSet = types.toSet
-    val added: Set[String] = typesSet -- prevTypesSet
-    val deleted: Set[String] = prevTypesSet -- typesSet
-    val changeString: String = (added.toSeq, deleted.toSeq) match {
-      case (Seq(), Seq()) => "No change"
-      case (added, Seq()) => s"Added: ${added}"
+    val added = typesSet -- prevTypesSet
+    val deleted = prevTypesSet -- typesSet
+    val changeString = (added.toSeq, deleted.toSeq) match {
+      case (Seq(), Seq())   => "No change"
+      case (added, Seq())   => s"Added: ${added}"
       case (Seq(), deleted) => s"Deleted: ${deleted}"
       case (added, deleted) =>
         s"Added: ${added}, Deleted: ${deleted}"
     }
 
-    override val toString: String =
+    override val toString =
       s"${filename}\t${typesSet.mkString(", ")} (${types.length})\t${prevTypesSet
           .mkString(", ")} (${prevTypes.length})\t${changeString}"
   }
@@ -102,13 +101,14 @@ object Comparer extends LazyLogging {
     override val toString = {
       val changed = comparisons.filterNot(_.unchanged)
 
-      val by_status = comparisons
-        .toSeq
+      val by_status = comparisons.toSeq
         .map(_.status)
         .groupBy(identity)
-        .map[(Int, String)]({
-          case (status, values) =>
-            (values.size, f"${status}: ${values.size} (${values.size.toDouble/comparisons.size*100}%.2f%%)")
+        .map[(Int, String)]({ case (status, values) =>
+          (
+            values.size,
+            f"${status}: ${values.size} (${values.size.toDouble / comparisons.size * 100}%.2f%%)"
+          )
         })
         .toSeq
         .sortBy(-_._1)
@@ -120,13 +120,22 @@ object Comparer extends LazyLogging {
     }
   }
 
-  def compareClusters(filename: String, summary: Compendium, prevSummary: Compendium): ZIO[Blocking, Throwable, ClusterComparisonReport] = {
+  def compareClusters(
+      filename: String,
+      summary: Compendium,
+      prevSummary: Compendium
+  ): ZIO[Blocking, Throwable, ClusterComparisonReport] = {
     for {
-      identifiers: Set[String] <- (summary.records.map(_.ids) ++ prevSummary.records.map(_.ids)).runCollect.map(_.foldLeft(Set[String]())(_ ++ _))
+      identifiers: Set[String] <- (summary.records.map(
+        _.ids
+      ) ++ prevSummary.records.map(_.ids)).runCollect
+        .map(_.foldLeft(Set[String]())(_ ++ _))
       comparisons = ZIO.foreach(identifiers)(id => {
         for {
           records <- summary.records.filter(_.ids.contains(id)).runCollect
-          prevRecords <- prevSummary.records.filter(_.ids.contains(id)).runCollect
+          prevRecords <- prevSummary.records
+            .filter(_.ids.contains(id))
+            .runCollect
         } yield {
           ClusterComparison(id, records.toSet, prevRecords.toSet)
         }

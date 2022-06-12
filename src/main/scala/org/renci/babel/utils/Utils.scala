@@ -3,9 +3,9 @@ package org.renci.babel.utils
 import org.rogach.scallop.{ScallopConfBase, ScallopOption}
 
 object Utils {
-  /**
-   * Helper method for displaying the percent change between two counts.
-   */
+
+  /** Helper method for displaying the percent change between two counts.
+    */
   def relativePercentChange(count: Long, countPrev: Long): String = {
     val percentChange = (count - countPrev).toDouble / countPrev * 100
     f"${count - countPrev}%+d\t$percentChange%+2.2f%%"
@@ -20,17 +20,19 @@ object Utils {
     )
   }
 
-  /**
-   * Generic method to determine whether a particular filename should be
-   * filtered in or out from the results. The algorithm we use is:
-   * 1. If any `--filtered-in` prefixes are provided, then we exclude everything
-   *    that isn't explicitly filtered in (by starting with one of those prefixes
-   *    in a case-sensitive manner).
-   * 2. Otherwise, all filenames are allowed EXCEPT those explicitly filtered out
-   *    by `--filtered-out` by starting with one of those prefixes in a
-   *    case-sensitive manner.
-   */
-  def filterFilename(conf: SupportsFilenameFiltering, filename: String): Boolean = {
+  /** Generic method to determine whether a particular filename should be
+    * filtered in or out from the results. The algorithm we use is:
+    *   1. If any `--filtered-in` prefixes are provided, then we exclude
+    *      everything that isn't explicitly filtered in (by starting with one of
+    *      those prefixes in a case-sensitive manner). 2. Otherwise, all
+    *      filenames are allowed EXCEPT those explicitly filtered out by
+    *      `--filtered-out` by starting with one of those prefixes in a
+    *      case-sensitive manner.
+    */
+  def filterFilename(
+      conf: SupportsFilenameFiltering,
+      filename: String
+  ): Boolean = {
     val filteredIn = conf.filterIn.getOrElse(List())
     val filteredOut = conf.filterOut.getOrElse(List())
 

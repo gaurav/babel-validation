@@ -29,10 +29,12 @@ object CLI extends zio.App with LazyLogging {
   ): URIO[Blocking with Console with Console, ExitCode] = {
     val conf = new Conf(args)
     conf.subcommand match {
-      case Some(diff: DiffReporter.DiffSubcommand) => DiffReporter.diffResults(diff).exitCode
-      case Some(convert: Converter.ConvertSubcommand) => Converter.convert(convert).exitCode
-      case a => ZIO.fail(s"Error: no subcommand provided or invalid (${a})")
-          .exitCode
+      case Some(diff: DiffReporter.DiffSubcommand) =>
+        DiffReporter.diffResults(diff).exitCode
+      case Some(convert: Converter.ConvertSubcommand) =>
+        Converter.convert(convert).exitCode
+      case a =>
+        ZIO.fail(s"Error: no subcommand provided or invalid (${a})").exitCode
     }
   }
 }
