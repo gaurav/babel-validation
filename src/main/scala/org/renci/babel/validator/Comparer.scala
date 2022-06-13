@@ -86,7 +86,7 @@ object Comparer extends LazyLogging {
       records: Set[Compendium.Record],
       prevRecords: Set[Compendium.Record]
   ) {
-    val unchanged = (records == prevRecords)
+    val unchanged: Boolean = (records == prevRecords)
     val status: String = {
       if (records.isEmpty && prevRecords.isEmpty) "ERROR_BLANK"
       else if (unchanged) "UNCHANGED"
@@ -94,7 +94,7 @@ object Comparer extends LazyLogging {
       else if (records.nonEmpty && prevRecords.isEmpty) "ADDED"
       else "CHANGED"
     }
-    override val toString = if (unchanged) {
+    override val toString: String = if (unchanged) {
       s"${id}\t${status}\t${records.size}\t${prevRecords.size}"
     } else {
       s"${id}\t${status}\t${records} (${records.size})\t${prevRecords} (${prevRecords.size})"
@@ -105,16 +105,17 @@ object Comparer extends LazyLogging {
       filename: String,
       comparisons: Set[ClusterComparison]
   ) {
-    override val toString = {
+    override val toString: String = {
       val changed = comparisons.filterNot(_.unchanged)
 
-      val by_status = comparisons
-        .toSeq
+      val by_status = comparisons.toSeq
         .map(_.status)
         .groupBy(identity)
-        .map[(Int, String)]({
-          case (status, values) =>
-            (values.size, f"${status}: ${values.size} (${values.size.toDouble/comparisons.size*100}%.2f%%)")
+        .map[(Int, String)]({ case (status, values) =>
+          (
+            values.size,
+            f"${status}: ${values.size} (${values.size.toDouble / comparisons.size * 100}%.2f%%)"
+          )
         })
         .toSeq
         .sortBy(-_._1)
@@ -126,13 +127,22 @@ object Comparer extends LazyLogging {
     }
   }
 
-  def compareClusters(filename: String, summary: Compendium, prevSummary: Compendium): ZIO[Blocking, Throwable, ClusterComparisonReport] = {
+  def compareClusters(
+      filename: String,
+      summary: Compendium,
+      prevSummary: Compendium
+  ): ZIO[Blocking, Throwable, ClusterComparisonReport] = {
     for {
-      identifiers: Set[String] <- (summary.records.map(_.ids) ++ prevSummary.records.map(_.ids)).runCollect.map(_.foldLeft(Set[String]())(_ ++ _))
+      identifiers: Set[String] <- (summary.records.map(
+        _.ids
+      ) ++ prevSummary.records.map(_.ids)).runCollect
+        .map(_.foldLeft(Set[String]())(_ ++ _))
       comparisons = ZIO.foreach(identifiers)(id => {
         for {
           records <- summary.records.filter(_.ids.contains(id)).runCollect
-          prevRecords <- prevSummary.records.filter(_.ids.contains(id)).runCollect
+          prevRecords <- prevSummary.records
+            .filter(_.ids.contains(id))
+            .runCollect
         } yield {
           ClusterComparison(id, records.toSet, prevRecords.toSet)
         }

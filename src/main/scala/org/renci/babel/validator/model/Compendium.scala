@@ -35,10 +35,10 @@ object Compendium extends LazyLogging {
 
   /** An identifier in this compendium. */
   case class Identifier(
-    i: Option[String],
-    l: Option[String]
+      i: Option[String],
+      l: Option[String]
   ) {
-    override val toString = (i, l) match {
+    override val toString: String = (i, l) match {
       case (None, None)       => s"None"
       case (Some(i), None)    => i
       case (None, Some(l))    => s"[${l}]"
@@ -48,15 +48,17 @@ object Compendium extends LazyLogging {
 
   /** A single record in this compendium. */
   case class Record(
-    `type`: String,
-    ic: Option[Double],
-    identifiers: Seq[Identifier]
+      `type`: String,
+      ic: Option[Double],
+      identifiers: Seq[Identifier]
   ) {
     val primaryId: Option[String] = identifiers.headOption.flatMap(_.i)
     val ids: Set[String] = identifiers.flatMap(_.i).toSet
-    override val toString = ic match {
-      case None => s"Record(${`type`} with ${identifiers.size} IDs: ${identifiers.mkString(", ")})"
-      case Some(ic) => s"Record(${`type`} [${ic}] with ${identifiers.size} IDs: ${identifiers.mkString(", ")})"
+    override val toString: String = ic match {
+      case None =>
+        s"Record(${`type`} with ${identifiers.size} IDs: ${identifiers.mkString(", ")})"
+      case Some(ic) =>
+        s"Record(${`type`} [${ic}] with ${identifiers.size} IDs: ${identifiers.mkString(", ")})"
     }
   }
 }
