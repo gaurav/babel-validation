@@ -10,28 +10,26 @@ import zio.stream.ZStream
 
 import java.io.{FileOutputStream, PrintStream}
 
-/**
- * Functions for reporting on the differences between two input files.
- */
+/** Functions for reporting on the differences between two input files.
+  */
 object Reporter extends LazyLogging {
-  /**
-   * Helper method for displaying the percent change between two counts.
-   */
+
+  /** Helper method for displaying the percent change between two counts.
+    */
   def relativePercentChange(count: Long, countPrev: Long): String = {
     val percentChange = (count - countPrev).toDouble / countPrev * 100
     f"${count - countPrev}%+d\t$percentChange%+2.2f%%"
   }
 
-  /**
-   * Generic method to determine whether a particular filename should be
-   * filtered in or out from the results. The algorithm we use is:
-   * 1. If any `--filtered-in` prefixes are provided, then we exclude everything
-   *    that isn't explicitly filtered in (by starting with one of those prefixes
-   *    in a case-sensitive manner).
-   * 2. Otherwise, all filenames are allowed EXCEPT those explicitly filtered out
-   *    by `--filtered-out` by starting with one of those prefixes in a
-   *    case-sensitive manner.
-   */
+  /** Generic method to determine whether a particular filename should be
+    * filtered in or out from the results. The algorithm we use is:
+    *   1. If any `--filtered-in` prefixes are provided, then we exclude
+    *      everything that isn't explicitly filtered in (by starting with one of
+    *      those prefixes in a case-sensitive manner). 2. Otherwise, all
+    *      filenames are allowed EXCEPT those explicitly filtered out by
+    *      `--filtered-out` by starting with one of those prefixes in a
+    *      case-sensitive manner.
+    */
   def filterFilename(conf: Conf, filename: String): Boolean = {
     val filteredIn = conf.filterIn.getOrElse(List())
     val filteredOut = conf.filterOut.getOrElse(List())
@@ -51,15 +49,15 @@ object Reporter extends LazyLogging {
     true
   }
 
-  /**
-   * Given two BabelOutputs, it returns a list of all compendia found in BOTH of the BabelOutputs
-   * paired together.
-   *
-   * TODO: modify this so we return every compendium found in EITHER BabelOutput.
-   */
+  /** Given two BabelOutputs, it returns a list of all compendia found in BOTH
+    * of the BabelOutputs paired together.
+    *
+    * TODO: modify this so we return every compendium found in EITHER
+    * BabelOutput.
+    */
   def retrievePairedCompendiaSummaries(
-    babelOutput: BabelOutput,
-    babelPrevOutput: BabelOutput
+      babelOutput: BabelOutput,
+      babelPrevOutput: BabelOutput
   ): Seq[(String, Compendium, Compendium)] = {
     for {
       summary <- babelOutput.compendia
@@ -85,10 +83,10 @@ object Reporter extends LazyLogging {
       .fromIterable(pairedSummaries)
       .mapMParUnordered(conf.nCores()) {
         case (
-          filename: String,
-          summary: Compendium,
-          prevSummary: Compendium
-          ) if filterFilename(conf, filename) => {
+              filename: String,
+              summary: Compendium,
+              prevSummary: Compendium
+            ) if filterFilename(conf, filename) => {
 
           for {
             // lengthComparison <- Comparer.compareLengths(filename, summary, prevSummary)

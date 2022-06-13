@@ -5,27 +5,29 @@ import org.renci.babel.validator.model.Compendium
 import zio.blocking.Blocking
 import zio.{Chunk, ZIO}
 
-/**
- * Methods in this class can be used to compare results between two compendia.
- */
+/** Methods in this class can be used to compare results between two compendia.
+  */
 object Comparer extends LazyLogging {
-  /**
-   * Helper method for displaying the percent change between two counts.
-   */
+
+  /** Helper method for displaying the percent change between two counts.
+    */
   def relativePercentChange(count: Long, countPrev: Long): String = {
     val percentChange = (count - countPrev).toDouble / countPrev * 100
     f"${count - countPrev}%+d\t$percentChange%+2.2f%%"
   }
 
-  case class LengthComparison(
-      filename: String,
-      count: Long,
-      prevCount: Long) {
-    val relativePercentChange: String = Comparer.relativePercentChange(count, prevCount)
-    override val toString = s"${filename}\t${count}\t${prevCount}\t${relativePercentChange}"
+  case class LengthComparison(filename: String, count: Long, prevCount: Long) {
+    val relativePercentChange: String =
+      Comparer.relativePercentChange(count, prevCount)
+    override val toString: String =
+      s"${filename}\t${count}\t${prevCount}\t${relativePercentChange}"
   }
 
-  def compareLengths(filename: String, summary: Compendium, prevSummary: Compendium): ZIO[Blocking, Throwable, LengthComparison] = {
+  def compareLengths(
+      filename: String,
+      summary: Compendium,
+      prevSummary: Compendium
+  ): ZIO[Blocking, Throwable, LengthComparison] = {
     for {
       count <- summary.count
       prevCount <- prevSummary.count
@@ -39,9 +41,9 @@ object Comparer extends LazyLogging {
   ) {
     val typesSet = types.toSet
     val prevTypesSet = types.toSet
-    val added = typesSet -- prevTypesSet
-    val deleted = prevTypesSet -- typesSet
-    val changeString = (added.toSeq, deleted.toSeq) match {
+    val added: Set[String] = typesSet -- prevTypesSet
+    val deleted: Set[String] = prevTypesSet -- typesSet
+    val changeString: String = (added.toSeq, deleted.toSeq) match {
       case (Seq(), Seq()) => "No change"
       case (added, Seq()) => s"Added: ${added}"
       case (Seq(), deleted) => s"Deleted: ${deleted}"
@@ -49,12 +51,16 @@ object Comparer extends LazyLogging {
         s"Added: ${added}, Deleted: ${deleted}"
     }
 
-    override val toString = s"${filename}\t${typesSet.mkString(", ")} (${types.length})\t${
-      prevTypesSet.mkString(", ")
-    } (${prevTypes.length})\t${changeString}"
+    override val toString: String =
+      s"${filename}\t${typesSet.mkString(", ")} (${types.length})\t${prevTypesSet
+          .mkString(", ")} (${prevTypes.length})\t${changeString}"
   }
 
-  def compareTypes(filename: String, summary: Compendium, prevSummary: Compendium): ZIO[Blocking, Throwable, TypeComparison] = {
+  def compareTypes(
+      filename: String,
+      summary: Compendium,
+      prevSummary: Compendium
+  ): ZIO[Blocking, Throwable, TypeComparison] = {
     for {
       typesChunk <- (for {
         row: Compendium.Record <- summary.records
