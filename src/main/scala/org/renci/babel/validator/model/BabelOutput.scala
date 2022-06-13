@@ -21,7 +21,7 @@ class BabelOutput(root: File) {
     val dir = new File(root, dirName)
     val filenames = dir.list()
     // TODO: this would be a good place to look for out-of-place files.
-    filenames
+    filenames.toSeq
   }
 
   /** The compendia directory in this BabelOutput.

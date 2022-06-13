@@ -81,7 +81,7 @@ object Reporter extends LazyLogging {
     output.println("Filename\tCount\tPrevCount\tDiff\tPercentageChange")
     ZStream
       .fromIterable(pairedSummaries)
-      .mapMParUnordered(conf.nCores()) {
+      .mapMPar(conf.nCores()) {
         case (
               filename: String,
               summary: Compendium,
@@ -89,19 +89,18 @@ object Reporter extends LazyLogging {
             ) if filterFilename(conf, filename) => {
 
           for {
-            lengthComparison <- Comparer.compareLengths(
+            // lengthComparison <- Comparer.compareLengths(filename, summary, prevSummary)
+            // typeComparison <- Comparer.compareTypes(filename, summary, prevSummary)
+            clusterComparison <- Comparer.compareClusters(
               filename,
               summary,
-              prevSummary
-            )
-            typeComparison <- Comparer.compareTypes(
-              filename,
-              summary,
-              prevSummary
+              prevSummary,
+              conf.nCores()
             )
           } yield {
-            output.println(lengthComparison.toString)
-            output.println(typeComparison.toString)
+            // output.println(lengthComparison.toString)
+            // output.println(typeComparison.toString)
+            output.println(clusterComparison.toString)
           }
         }
         case (filename: String, _, _) if !filterFilename(conf, filename) => {
