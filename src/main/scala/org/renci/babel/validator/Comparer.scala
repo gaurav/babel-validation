@@ -19,7 +19,7 @@ object Comparer extends LazyLogging {
   case class LengthComparison(filename: String, count: Long, prevCount: Long) {
     val relativePercentChange: String =
       Comparer.relativePercentChange(count, prevCount)
-    override val toString =
+    override val toString: String =
       s"${filename}\t${count}\t${prevCount}\t${relativePercentChange}"
   }
 
@@ -41,9 +41,9 @@ object Comparer extends LazyLogging {
   ) {
     val typesSet = types.toSet
     val prevTypesSet = types.toSet
-    val added = typesSet -- prevTypesSet
-    val deleted = prevTypesSet -- typesSet
-    val changeString = (added.toSeq, deleted.toSeq) match {
+    val added: Set[String] = typesSet -- prevTypesSet
+    val deleted: Set[String] = prevTypesSet -- typesSet
+    val changeString: String = (added.toSeq, deleted.toSeq) match {
       case (Seq(), Seq()) => "No change"
       case (added, Seq()) => s"Added: ${added}"
       case (Seq(), _)     => s"Deleted: ${added}"
@@ -51,7 +51,7 @@ object Comparer extends LazyLogging {
         s"Added: ${added}, Deleted: ${deleted}"
     }
 
-    override val toString =
+    override val toString: String =
       s"${filename}\t${typesSet.mkString(", ")} (${types.length})\t${prevTypesSet
           .mkString(", ")} (${prevTypes.length})\t${changeString}"
   }
