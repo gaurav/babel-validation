@@ -3,6 +3,7 @@ package org.renci.babel.validator
 import com.typesafe.scalalogging.LazyLogging
 import org.renci.babel.validator.model.Compendium
 import zio.blocking.Blocking
+import zio.stream.ZStream
 import zio.{Chunk, ZIO}
 
 /** Methods in this class can be used to compare results between two compendia.
@@ -137,12 +138,12 @@ object Comparer extends LazyLogging {
         _.ids
       ) ++ prevSummary.records.map(_.ids)).runCollect
         .map(_.foldLeft(Set[String]())(_ ++ _))
+      summaryByCluster = summary.records.groupByKey(_.ids)
+      prevSummaryByCluster = prevSummary.records.groupByKey(_.ids)
       comparisons = ZIO.foreach(identifiers)(id => {
         for {
-          records <- summary.records.filter(_.ids.contains(id)).runCollect
-          prevRecords <- prevSummary.records
-            .filter(_.ids.contains(id))
-            .runCollect
+          records <- summaryByCluster({ case (cluster, records) => if(!cluster.contains(id)) ZStream.empty else records }).runCollect
+          prevRecords <- prevSummaryByCluster({ case (cluster, records) => if(!cluster.contains(id)) ZStream.empty else records }).runCollect
         } yield {
           ClusterComparison(id, records.toSet, prevRecords.toSet)
         }
