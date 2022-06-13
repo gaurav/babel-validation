@@ -81,7 +81,7 @@ object Reporter extends LazyLogging {
     output.println("Filename\tCount\tPrevCount\tDiff\tPercentageChange")
     ZStream
       .fromIterable(pairedSummaries)
-      .mapMParUnordered(conf.nCores()) {
+      .mapMPar(conf.nCores()) {
         case (
               filename: String,
               summary: Compendium,
@@ -94,7 +94,8 @@ object Reporter extends LazyLogging {
             clusterComparison <- Comparer.compareClusters(
               filename,
               summary,
-              prevSummary
+              prevSummary,
+              conf.nCores()
             )
           } yield {
             // output.println(lengthComparison.toString)

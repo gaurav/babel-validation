@@ -16,9 +16,10 @@ object Validator extends zio.App with LazyLogging {
       descr = "The current Babel output directory",
       required = true
     )
+    validateFileIsDirectory(babelOutput)
+
     val babelPrevOutput: ScallopOption[File] =
       trailArg[File](descr = "The previous Babel output", required = true)
-    validateFileIsDirectory(babelOutput)
     validateFileIsDirectory(babelPrevOutput)
 
     val filterIn: ScallopOption[List[String]] = opt[List[String]](descr =
