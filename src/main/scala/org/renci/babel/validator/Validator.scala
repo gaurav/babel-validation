@@ -10,7 +10,7 @@ import java.io.File
 
 object Validator extends zio.App with LazyLogging {
   class Conf(args: Seq[String]) extends ScallopConf(args) {
-    val instruction = trailArg[String]()
+    val instruction: ScallopOption[String] = trailArg[String]()
 
     val babelOutput: ScallopOption[File] = trailArg[File](
       descr = "The current Babel output directory",

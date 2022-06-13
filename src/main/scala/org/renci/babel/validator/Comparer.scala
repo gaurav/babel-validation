@@ -140,21 +140,37 @@ object Comparer extends LazyLogging {
       ) ++ prevSummary.records.map(_.ids)).runCollect
         .map(_.foldLeft(Set[String]())(_ ++ _))
 
-      summaryByCluster: ZStream.GroupBy[Blocking, Throwable, String, Compendium.Record] = summary.records.flatMap(
-        record => ZStream.fromIterable(record.ids).map(id => (id, record))
-      ).groupBy({
-        case (id: String, record: Compendium.Record) => ZIO.succeed((id, record))
-      })
-      prevSummaryByCluster: ZStream.GroupBy[Blocking, Throwable, String, Compendium.Record] = prevSummary.records.flatMap(
-        record => ZStream.fromIterable(record.ids).map(id => (id, record))
-      ).groupBy({
-        case (id: String, record: Compendium.Record) => ZIO.succeed((id, record))
-      })
+      summaryByCluster: ZStream.GroupBy[
+        Blocking,
+        Throwable,
+        String,
+        Compendium.Record
+      ] = summary.records
+        .flatMap(record =>
+          ZStream.fromIterable(record.ids).map(id => (id, record))
+        )
+        .groupBy({ case (id: String, record: Compendium.Record) =>
+          ZIO.succeed((id, record))
+        })
+      prevSummaryByCluster: ZStream.GroupBy[
+        Blocking,
+        Throwable,
+        String,
+        Compendium.Record
+      ] = prevSummary.records
+        .flatMap(record =>
+          ZStream.fromIterable(record.ids).map(id => (id, record))
+        )
+        .groupBy({ case (id: String, record: Compendium.Record) =>
+          ZIO.succeed((id, record))
+        })
       comparisons = ZIO.foreachParN(nCores)(identifiers.toSeq)(id => {
         for {
-          records <- summaryByCluster.filter(_ == id) { case (_, records) => records }
+          records <- summaryByCluster
+            .filter(_ == id) { case (_, records) => records }
             .runCollect
-          prevRecords <- prevSummaryByCluster.filter(_ == id) { case (_, records) => records }
+          prevRecords <- prevSummaryByCluster
+            .filter(_ == id) { case (_, records) => records }
             .runCollect
         } yield {
           // logger.info(s"ClusterComparison(${id}, ${records}, ${prevRecords})")
