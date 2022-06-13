@@ -44,8 +44,8 @@ object Comparer extends LazyLogging {
     val added: Set[String] = typesSet -- prevTypesSet
     val deleted: Set[String] = prevTypesSet -- typesSet
     val changeString: String = (added.toSeq, deleted.toSeq) match {
-      case (Seq(), Seq()) => "No change"
-      case (added, Seq()) => s"Added: ${added}"
+      case (Seq(), Seq())   => "No change"
+      case (added, Seq())   => s"Added: ${added}"
       case (Seq(), deleted) => s"Deleted: ${deleted}"
       case (added, deleted) =>
         s"Added: ${added}, Deleted: ${deleted}"
