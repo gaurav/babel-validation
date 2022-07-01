@@ -1,4 +1,4 @@
-package org.renci.babel.utils
+package org.renci.babel.utils.cli
 
 import org.rogach.scallop.{ScallopConfBase, ScallopOption}
 

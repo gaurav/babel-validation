@@ -1,7 +1,7 @@
 package org.renci.babel.utils.converter
 
 import com.typesafe.scalalogging.LazyLogging
-import org.renci.babel.utils.Utils.{SupportsFilenameFiltering, filterFilename}
+import org.renci.babel.utils.cli.Utils.{SupportsFilenameFiltering, filterFilename}
 import org.renci.babel.utils.model.BabelOutput
 import org.rogach.scallop.{ScallopOption, Subcommand}
 import zio.ZIO
@@ -34,7 +34,7 @@ object Converter extends LazyLogging {
       default = Some("sssom")
     )
 
-    val nCores: ScallopOption[Int] = opt[Int](descr = "Number of cores to use")
+    val nCores: ScallopOption[Int] = opt[Int](descr = "Number of cores to use", default=Some(4))
 
     val output: ScallopOption[File] =
       opt[File](descr = "Output directory", required = true)

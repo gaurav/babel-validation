@@ -1,4 +1,4 @@
-package org.renci.babel.utils
+package org.renci.babel.utils.cli
 
 import com.typesafe.scalalogging.LazyLogging
 import org.renci.babel.utils.model.Compendium
