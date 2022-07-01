@@ -11,7 +11,7 @@ object Comparer extends LazyLogging {
 
   case class LengthComparison(filename: String, count: Long, prevCount: Long) {
     val relativePercentChange: String =
-      Utils.relativePercentChange(count, prevCount)
+      CLI.relativePercentChange(count, prevCount)
     override val toString: String =
       s"${filename}\t${count}\t${prevCount}\t${relativePercentChange}"
   }

@@ -1,7 +1,6 @@
 package org.renci.babel.utils.cli
 
 import com.typesafe.scalalogging.LazyLogging
-import Utils.SupportsFilenameFiltering
 import org.renci.babel.utils.model.{BabelOutput, Compendium}
 import org.rogach.scallop.{ScallopOption, Subcommand}
 import zio.ZIO
@@ -18,7 +17,7 @@ object DiffReporter extends LazyLogging {
   /** The subcommand that controlling comparing. */
   class DiffSubcommand
       extends Subcommand("diff")
-      with SupportsFilenameFiltering {
+      with org.renci.babel.utils.cli.CLI.SupportsFilenameFiltering {
     val babelOutput: ScallopOption[File] = trailArg[File](
       descr = "The current Babel output directory",
       required = true
@@ -72,7 +71,7 @@ object DiffReporter extends LazyLogging {
               filename: String,
               summary: Compendium,
               prevSummary: Compendium
-            ) if Utils.filterFilename(conf, filename) => {
+            ) if CLI.filterFilename(conf, filename) => {
 
           for {
             // lengthComparison <- Comparer.compareLengths(filename, summary, prevSummary)
@@ -89,7 +88,7 @@ object DiffReporter extends LazyLogging {
           }
         }
         case (filename: String, _, _)
-            if !Utils.filterFilename(conf, filename) => {
+            if !CLI.filterFilename(conf, filename) => {
           logger.info(s"Skipping ${filename}")
           ZIO.succeed(())
         }
