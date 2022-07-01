@@ -45,20 +45,20 @@ object CLI extends zio.App with LazyLogging {
       args: List[String]
   ): URIO[Blocking with Console with Console, ExitCode] = {
     val conf = new Conf(args)
-    val zioURIO = conf.subcommand match {
+    val z = conf.subcommand match {
       case Some(diff: DiffReporter.DiffSubcommand) =>
         DiffReporter.diffResults(diff).exitCode
       case Some(convert: Converter.ConvertSubcommand) =>
         Converter.convert(convert).exitCode
       case a =>
-        ZIO.fail(s"Error: no subcommand provided or invalid (${a})").exitCode
+        ZIO.fail(s"Error: no subcommand provided or invalid ($a)").exitCode
     }
 
     val startTime = System.nanoTime()
-    zioURIO map (exitCode => {
+    z map (exitCode => {
       val endTime = System.nanoTime()
       val timeTakenInSeconds = (endTime - startTime).toDouble / 1_000_000_000
-      logger.info(f"Completed in ${timeTakenInSeconds}%.2f seconds")
+      logger.info(f"Completed in $timeTakenInSeconds%.2f seconds")
       exitCode
     })
   }
@@ -91,15 +91,15 @@ object CLI extends zio.App with LazyLogging {
     val filteredOut = conf.filterOut.getOrElse(List())
 
     if (filteredIn.nonEmpty) {
-      if (filteredIn.exists(filename.startsWith(_))) {
-        return true;
+      if (filteredIn.exists(filename.startsWith)) {
+        return true
       } else {
-        return false;
+        return false
       }
     }
 
-    if (filteredOut.nonEmpty && filteredOut.exists(filename.startsWith(_))) {
-      return false;
+    if (filteredOut.nonEmpty && filteredOut.exists(filename.startsWith)) {
+      return false
     }
 
     true
