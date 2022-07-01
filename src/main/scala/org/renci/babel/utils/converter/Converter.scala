@@ -89,8 +89,9 @@ object Converter extends LazyLogging {
                */
 
               val predicateId = "skos:exactMatch"
-              val subjectString = s"${cliqueLeader.i.getOrElse("")}\t${cliqueLeader.l
-                  .getOrElse("")}\t${record.`type`}"
+              val subjectString =
+                s"${cliqueLeader.i.getOrElse("")}\t${cliqueLeader.l
+                    .getOrElse("")}\t${record.`type`}"
 
               // TODO: replace with mappingJustification => semapv:MappingChaining for the next version of SSSOM.
               val matchType = "HumanCurated"
