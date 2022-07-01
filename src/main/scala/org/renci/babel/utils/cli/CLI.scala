@@ -72,8 +72,8 @@ object CLI extends zio.App with LazyLogging {
     * filtered in or out from the results. The algorithm we use is:
     *   1. If any `--filtered-in` prefixes are provided, then we exclude
     *      everything that isn't explicitly filtered in (by starting with one of
-    *      those prefixes in a case-sensitive manner). 2. Otherwise, all
-    *      filenames are allowed EXCEPT those explicitly filtered out by
+    *      those prefixes in a case-sensitive manner).
+   *   2. Otherwise, all filenames are allowed EXCEPT those explicitly filtered out by
     *      `--filtered-out` by starting with one of those prefixes in a
     *      case-sensitive manner.
     */
