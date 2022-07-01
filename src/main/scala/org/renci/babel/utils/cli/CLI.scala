@@ -105,6 +105,11 @@ object CLI extends zio.App with LazyLogging {
     true
   }
 
+  /**
+   * filterFilename() can work with any Scallop configuration that includes `--filter-in`
+   * and `--filter-out` options. We can include those fields in a consistent way by including
+   * this trait in a configuration.
+   */
   trait SupportsFilenameFiltering extends ScallopConfBase {
     val filterIn: ScallopOption[List[String]] = opt[List[String]](descr =
       "List of filenames to include (matched using startsWith)"
@@ -113,5 +118,4 @@ object CLI extends zio.App with LazyLogging {
       "List of filenames to exclude (matched using startsWith)"
     )
   }
-
 }
