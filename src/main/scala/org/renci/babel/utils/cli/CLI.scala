@@ -10,8 +10,8 @@ import zio.{ExitCode, URIO, ZIO}
 /**
  * The entrypoint for Babel Utils. The subcommand name controls which of the
  * utils will be invoked. The following subcommands are currently supported:
- *  - diff (DiffReporter)
- *  - convert (Converter)
+ *   - diff (DiffReporter)
+ *   - convert (Converter)
  *
  * This is architected so that each of those classes is responsible for what is
  * supported by that action, and this object only stores shared code.
@@ -19,10 +19,11 @@ import zio.{ExitCode, URIO, ZIO}
 object CLI extends zio.App with LazyLogging {
 
   /**
-   * The Scallop configuration for this entire application, which consists of a series of
-   * Subcommands provided by the individual classes.
+   * The Scallop configuration for this entire application, which consists of a
+   * series of Subcommands provided by the individual classes.
    *
-   * @param args The command-line arguments to this application.
+   * @param args
+   *   The command-line arguments to this application.
    */
   class Conf(args: Seq[String]) extends ScallopConf(args) {
     addSubcommand(new DiffReporter.DiffSubcommand())
@@ -35,9 +36,10 @@ object CLI extends zio.App with LazyLogging {
    * Entrypoint to this application.
    *
    * TODO:
-   *  - Some stats on overall memory usage would be great too
+   *   - Some stats on overall memory usage would be great too
    *
-   * @param args Command line arguments.
+   * @param args
+   *   Command line arguments.
    */
   def run(
       args: List[String]
@@ -55,28 +57,32 @@ object CLI extends zio.App with LazyLogging {
     val startTime = System.nanoTime()
     zioURIO map (exitCode => {
       val endTime = System.nanoTime()
-      val timeTakenInSeconds = (endTime - startTime).toDouble/1_000_000_000
+      val timeTakenInSeconds = (endTime - startTime).toDouble / 1_000_000_000
       logger.info(f"Completed in ${timeTakenInSeconds}%.2f seconds")
       exitCode
     })
   }
 
-  /** Helper method for displaying the percent change between two counts.
-    */
+  /**
+   * Helper method for displaying the percent change between two counts.
+   */
   def relativePercentChange(count: Long, countPrev: Long): String = {
     val percentChange = (count - countPrev).toDouble / countPrev * 100
     f"${count - countPrev}%+d\t$percentChange%+2.2f%%"
   }
 
-  /** Generic method to determine whether a particular filename should be
-    * filtered in or out from the results. The algorithm we use is:
-    *   1. If any `--filtered-in` prefixes are provided, then we exclude
-    *      everything that isn't explicitly filtered in (by starting with one of
-    *      those prefixes in a case-sensitive manner).
-   *   2. Otherwise, all filenames are allowed EXCEPT those explicitly filtered out by
-    *      `--filtered-out` by starting with one of those prefixes in a
-    *      case-sensitive manner.
-    */
+  /**
+   * Generic method to determine whether a particular filename should be
+   * filtered in or out from the results. The algorithm we use is:
+   *
+   *   1. If any `--filtered-in` prefixes are provided, then we exclude
+   *      everything that isn't explicitly filtered in (by starting with one of
+   *      those prefixes in a case-sensitive manner).
+   *
+   * 2. Otherwise, all filenames are allowed EXCEPT those explicitly filtered
+   * out by `--filtered-out` by starting with one of those prefixes in a
+   * case-sensitive manner.
+   */
   def filterFilename(
       conf: SupportsFilenameFiltering,
       filename: String

@@ -5,8 +5,9 @@ import org.renci.babel.utils.model.Compendium
 import zio.blocking.Blocking
 import zio.{Chunk, ZIO}
 
-/** Methods in this class can be used to compare results between two compendia.
-  */
+/**
+ * Methods in this class can be used to compare results between two compendia.
+ */
 object Comparer extends LazyLogging {
 
   case class LengthComparison(filename: String, count: Long, prevCount: Long) {

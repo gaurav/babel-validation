@@ -10,8 +10,9 @@ import zio.stream.ZStream
 
 import java.io.{File, FileOutputStream, PrintStream}
 
-/** Functions for reporting on the differences between two input files.
-  */
+/**
+ * Functions for reporting on the differences between two input files.
+ */
 object DiffReporter extends LazyLogging {
 
   /** The subcommand that controlling comparing. */
@@ -32,12 +33,13 @@ object DiffReporter extends LazyLogging {
     val output: ScallopOption[File] = opt[File](descr = "Output file")
   }
 
-  /** Given two BabelOutputs, it returns a list of all compendia found in BOTH
-    * of the BabelOutputs paired together.
-    *
-    * TODO: modify this so we return every compendium found in EITHER
-    * BabelOutput.
-    */
+  /**
+   * Given two BabelOutputs, it returns a list of all compendia found in BOTH of
+   * the BabelOutputs paired together.
+   *
+   * TODO: modify this so we return every compendium found in EITHER
+   * BabelOutput.
+   */
   def retrievePairedCompendiaSummaries(
       babelOutput: BabelOutput,
       babelPrevOutput: BabelOutput

@@ -12,20 +12,21 @@ import scala.collection.mutable
 
 object Compendium extends LazyLogging {
 
-  /** Quick-and-dirty memoize() implementation from
-    * https://stackoverflow.com/a/36960228/27310 This should probably be
-    * replaced with ZIO Cache or ScalaCache at some point.
-    *
-    * @param f
-    *   The function to memoize.
-    * @tparam I
-    *   The input type
-    * @tparam O
-    *   The output type
-    * @return
-    *   A function that will either return the cached value or calculate and
-    *   cache it.
-    */
+  /**
+   * Quick-and-dirty memoize() implementation from
+   * https://stackoverflow.com/a/36960228/27310 This should probably be replaced
+   * with ZIO Cache or ScalaCache at some point.
+   *
+   * @param f
+   *   The function to memoize.
+   * @tparam I
+   *   The input type
+   * @tparam O
+   *   The output type
+   * @return
+   *   A function that will either return the cached value or calculate and
+   *   cache it.
+   */
   def memoize[I, O](f: I => O): I => O = new mutable.HashMap[I, O]() {
     override def apply(key: I) = {
       logger.debug(s"Caching ${f}(${key}), already cached: ${contains(key)}")
@@ -63,18 +64,20 @@ object Compendium extends LazyLogging {
   }
 }
 
-/** A Compendium models a single compendium in a Babel output.
-  *
-  * At the moment, this is a JSON object with the following structure: { "type":
-  * "biolink:...", "identifiers": [{ "i": "identifier", "l": "label" }, { ... }]
-  * }
-  */
+/**
+ * A Compendium models a single compendium in a Babel output.
+ *
+ * At the moment, this is a JSON object with the following structure: { "type":
+ * "biolink:...", "identifiers": [{ "i": "identifier", "l": "label" }, { ... }]
+ * }
+ */
 class Compendium(file: File) extends LazyLogging {
   val filename = file.getName
   val path = file.toPath
 
-  /** A ZStream of all the lines in this file as strings.
-    */
+  /**
+   * A ZStream of all the lines in this file as strings.
+   */
   lazy val lines: ZStream[Blocking, Throwable, String] = {
     ZStream
       .fromFile(path)
@@ -88,17 +91,19 @@ class Compendium(file: File) extends LazyLogging {
   implicit val recordDecoder: JsonDecoder[Record] =
     DeriveJsonDecoder.gen[Record]
 
-  /** A ZStream that _doesn't_ throw an exception when you go through the
-    * entries: instead, any record that can't be converted to a Record is kept
-    * as an error as a String.
-    */
+  /**
+   * A ZStream that _doesn't_ throw an exception when you go through the
+   * entries: instead, any record that can't be converted to a Record is kept as
+   * an error as a String.
+   */
   lazy val recordsRaw: ZStream[Blocking, Throwable, Either[String, Record]] = {
     lines.map(line => line.fromJson[Record])
   }
 
-  /** A ZStream of all the compendium records in this file. Throws an exception
-    * if any line could not be converted into a String.
-    */
+  /**
+   * A ZStream of all the compendium records in this file. Throws an exception
+   * if any line could not be converted into a String.
+   */
   lazy val records: ZStream[Blocking, Throwable, Record] = {
     lines
       .flatMap(line =>
